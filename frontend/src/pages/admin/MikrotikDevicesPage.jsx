@@ -1,0 +1,233 @@
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { mikrotikApi } from '../../services/api';
+import { Plus, Wifi, RefreshCw, Zap, Check, X, Activity } from 'lucide-react';
+import toast from 'react-hot-toast';
+
+const EMPTY_FORM = {
+  name: '', host: '', port: 8728, username: 'admin',
+  password: '', use_ssl: false, hotspot_server: '', zone: '', notes: '',
+};
+
+export default function MikrotikDevicesPage() {
+  const qc = useQueryClient();
+  const [modal, setModal] = useState(false);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [editDevice, setEditDevice] = useState(null);
+  const [testingId, setTestingId] = useState(null);
+  const [syncingId, setSyncingId] = useState(null);
+
+  const { data: devices, isLoading, refetch } = useQuery({
+    queryKey: ['devices-full'],
+    queryFn: () => mikrotikApi.list().then(r => r.data.data),
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: (data) => editDevice ? mikrotikApi.update(editDevice.id, data) : mikrotikApi.create(data),
+    onSuccess: (res) => {
+      qc.invalidateQueries(['devices-full']);
+      qc.invalidateQueries(['devices']);
+      const test = res.data.connection_test;
+      if (test) {
+        toast[test.success ? 'success' : 'error'](
+          test.success
+            ? `✅ Conectado: ${test.identity} (RouterOS ${test.version})`
+            : `⚠️ Creado pero sin conexión: ${test.error}`
+        );
+      } else {
+        toast.success('Dispositivo actualizado');
+      }
+      setModal(false);
+    },
+    onError: (e) => toast.error(e.response?.data?.error || 'Error'),
+  });
+
+  const testConnection = async (id) => {
+    setTestingId(id);
+    try {
+      const res = await mikrotikApi.test(id);
+      const r = res.data.data;
+      qc.invalidateQueries(['devices-full']);
+      if (r.success) {
+        toast.success(`✅ ${r.identity} — RouterOS ${r.version} (${r.uptime})`);
+      } else {
+        toast.error(`Sin conexión: ${r.error}`);
+      }
+    } catch {
+      toast.error('Error al probar conexión');
+    } finally {
+      setTestingId(null);
+    }
+  };
+
+  const syncDevice = async (id, name) => {
+    setSyncingId(id);
+    try {
+      const res = await mikrotikApi.sync(id);
+      qc.invalidateQueries(['devices-full']);
+      const changes = res.data.data.changes;
+      toast.success(`Sync ${name}: ${changes.length} cambios detectados`);
+    } catch {
+      toast.error('Error al sincronizar');
+    } finally {
+      setSyncingId(null);
+    }
+  };
+
+  const openEdit = (d) => {
+    setEditDevice(d);
+    setForm({ name: d.name, host: d.host, port: d.port, username: d.username, password: '', use_ssl: d.use_ssl, hotspot_server: d.hotspot_server || '', zone: d.zone || '', notes: d.notes || '' });
+    setModal(true);
+  };
+
+  const StatusDot = ({ status }) => {
+    const cfg = {
+      online: 'bg-green-500',
+      offline: 'bg-gray-400',
+      error: 'bg-red-500',
+    };
+    return <span className={`inline-block w-2.5 h-2.5 rounded-full ${cfg[status] || 'bg-gray-400'} flex-shrink-0`} />;
+  };
+
+  return (
+    <div className="space-y-5 max-w-5xl">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Routers MikroTik</h1>
+          <p className="text-sm text-gray-500">Gestiona los dispositivos conectados</p>
+        </div>
+        <div className="flex gap-2">
+          <button onClick={() => refetch()} className="btn-secondary text-sm flex items-center gap-1">
+            <RefreshCw className="w-4 h-4" />
+          </button>
+          <button onClick={() => { setEditDevice(null); setForm(EMPTY_FORM); setModal(true); }} className="btn-primary flex items-center gap-2 text-sm">
+            <Plus className="w-4 h-4" />
+            Agregar Router
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {isLoading ? (
+          Array(3).fill().map((_, i) => <div key={i} className="card animate-pulse h-40" />)
+        ) : devices?.length === 0 ? (
+          <div className="col-span-2 card text-center text-gray-400 py-12">
+            <Wifi className="w-10 h-10 mx-auto mb-3 opacity-30" />
+            <p>No hay routers configurados</p>
+          </div>
+        ) : (
+          devices?.map(device => (
+            <div key={device.id} className="card hover:shadow-md transition-shadow">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="bg-gray-100 p-2 rounded-lg">
+                    <Wifi className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-800">{device.name}</h3>
+                    <p className="text-xs text-gray-400">{device.host}:{device.port}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <StatusDot status={device.status} />
+                  <span className="text-xs text-gray-500 capitalize">{device.status}</span>
+                </div>
+              </div>
+
+              <div className="text-xs text-gray-400 space-y-1 mb-4">
+                {device.zone && <p>Zona: {device.zone}</p>}
+                {device.hotspot_server && <p>Servidor HS: {device.hotspot_server}</p>}
+                {device.last_sync && <p>Última sync: {new Date(device.last_sync).toLocaleString('es')}</p>}
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => testConnection(device.id)}
+                  disabled={testingId === device.id}
+                  className="btn-secondary text-xs flex items-center gap-1 flex-1"
+                >
+                  <Activity className="w-3 h-3" />
+                  {testingId === device.id ? 'Probando...' : 'Probar'}
+                </button>
+                <button
+                  onClick={() => syncDevice(device.id, device.name)}
+                  disabled={syncingId === device.id}
+                  className="btn-secondary text-xs flex items-center gap-1 flex-1"
+                >
+                  <RefreshCw className={`w-3 h-3 ${syncingId === device.id ? 'animate-spin' : ''}`} />
+                  {syncingId === device.id ? 'Sync...' : 'Sincronizar'}
+                </button>
+                <button onClick={() => openEdit(device)} className="btn-secondary text-xs px-3">
+                  Editar
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Modal */}
+      {modal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <h2 className="text-lg font-bold text-gray-900 mb-5">
+                {editDevice ? 'Editar Router' : 'Agregar Router MikroTik'}
+              </h2>
+              <div className="space-y-3">
+                <div>
+                  <label className="label">Nombre del router *</label>
+                  <input className="input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Ej: Sector Norte" />
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="col-span-2">
+                    <label className="label">IP / Host *</label>
+                    <input className="input" value={form.host} onChange={e => setForm({ ...form, host: e.target.value })} placeholder="192.168.1.1" />
+                  </div>
+                  <div>
+                    <label className="label">Puerto</label>
+                    <input type="number" className="input" value={form.port} onChange={e => setForm({ ...form, port: parseInt(e.target.value) })} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="label">Usuario *</label>
+                    <input className="input" value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="label">Contraseña *</label>
+                    <input type="password" className="input" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
+                  </div>
+                </div>
+                <div>
+                  <label className="label">Servidor Hotspot (nombre en MT)</label>
+                  <input className="input" value={form.hotspot_server} onChange={e => setForm({ ...form, hotspot_server: e.target.value })} placeholder="hotspot1" />
+                </div>
+                <div>
+                  <label className="label">Zona geográfica</label>
+                  <input className="input" value={form.zone} onChange={e => setForm({ ...form, zone: e.target.value })} placeholder="Zona Norte" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <input type="checkbox" id="ssl" checked={form.use_ssl} onChange={e => setForm({ ...form, use_ssl: e.target.checked, port: e.target.checked ? 8729 : 8728 })} />
+                  <label htmlFor="ssl" className="text-sm text-gray-600">Usar SSL (puerto 8729)</label>
+                </div>
+              </div>
+              <div className="flex gap-3 mt-5">
+                <button onClick={() => setModal(false)} className="btn-secondary flex-1">Cancelar</button>
+                <button
+                  onClick={() => saveMutation.mutate(form)}
+                  disabled={saveMutation.isPending || !form.name || !form.host || !form.username}
+                  className="btn-primary flex-1 flex items-center justify-center gap-2"
+                >
+                  {saveMutation.isPending ? (
+                    <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Guardando...</>
+                  ) : 'Guardar y Probar'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
