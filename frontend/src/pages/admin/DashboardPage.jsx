@@ -130,7 +130,7 @@ export default function DashboardPage() {
         <StatCard
           title="Activos"
           value={sellers.active || 0}
-          subtitle="de " + (sellers.total || 0)
+          subtitle={`de ${sellers.total || 0}`}
           icon={CheckCircle}
           color="green"
           loading={isLoading}
