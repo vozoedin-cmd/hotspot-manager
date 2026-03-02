@@ -4,12 +4,22 @@ import { salesApi } from '../../services/api';
 import { format } from 'date-fns';
 import { ChevronLeft, ChevronRight, Receipt } from 'lucide-react';
 
+const statusLabels = {
+  available: 'Disponible',
+  sold: 'Vendida',
+  active: 'Activa',
+  used: 'Usada',
+  expired: 'Vencida',
+  disabled: 'Desactivada',
+};
+
 const statusColors = {
-  available: 'badge-info',
-  sold: 'badge-warning',
-  active: 'badge-success',
-  used: 'badge-secondary',
-  expired: 'badge-danger',
+  available: 'bg-blue-100 text-blue-700',
+  sold: 'bg-yellow-100 text-yellow-700',
+  active: 'bg-green-100 text-green-700',
+  used: 'bg-gray-100 text-gray-500',
+  expired: 'bg-red-100 text-red-600',
+  disabled: 'bg-gray-100 text-gray-400',
 };
 
 export default function SalesHistoryPage() {
@@ -25,12 +35,19 @@ export default function SalesHistoryPage() {
   const sales = data?.data ?? data?.sales ?? data?.rows ?? [];
   const total = data?.pagination?.total ?? data?.total ?? data?.count ?? 0;
   const totalPages = Math.ceil(total / LIMIT);
+  const totalRevenue = sales.reduce((s, x) => s + Number(x.amount || 0), 0);
 
   return (
     <div className="space-y-4 pb-6">
-      <div>
-        <h1 className="text-xl font-bold text-gray-900">Mis Ventas</h1>
-        <p className="text-sm text-gray-500">{total} ventas en total</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">Mis Ventas</h1>
+          <p className="text-sm text-gray-500">{total} ventas en total</p>
+        </div>
+        <div className="text-right">
+          <p className="text-xs text-gray-400">Esta página</p>
+          <p className="text-sm font-bold text-green-600">Q{totalRevenue.toFixed(2)}</p>
+        </div>
       </div>
 
       {isLoading ? (
@@ -48,20 +65,20 @@ export default function SalesHistoryPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="font-medium text-gray-900 text-sm">
-                      {sale.voucher?.package?.name ?? 'Paquete'}
+                      {sale.package?.name ?? sale.voucher?.package?.name ?? 'Paquete'}
                     </p>
                     <p className="text-xs text-gray-400 mt-0.5">
-                      {sale.client_name || '—'} · {format(new Date(sale.created_at || sale.createdAt), 'dd/MM/yyyy HH:mm')}
+                      {sale.client_name || 'Sin nombre'} · {format(new Date(sale.created_at || sale.createdAt), 'dd/MM/yyyy HH:mm')}
                     </p>
-                    <p className="text-xs text-gray-400 mt-0.5 font-mono">
-                      Ficha: {sale.voucher?.code ?? '—'}
+                    <p className="text-xs font-mono text-gray-500 mt-0.5">
+                      {sale.voucher?.code ?? '—'}
                     </p>
                   </div>
                   <div className="text-right flex flex-col items-end gap-1">
                     <span className="font-bold text-green-600">Q{Number(sale.amount).toFixed(2)}</span>
                     {sale.voucher?.status && (
-                      <span className={`badge ${statusColors[sale.voucher.status] ?? 'badge-secondary'}`}>
-                        {sale.voucher.status}
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColors[sale.voucher.status] ?? 'bg-gray-100 text-gray-500'}`}>
+                        {statusLabels[sale.voucher.status] ?? sale.voucher.status}
                       </span>
                     )}
                   </div>

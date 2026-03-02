@@ -4,7 +4,7 @@ import { reportsApi } from '../../services/api';
 import useAuthStore from '../../store/authStore';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Wallet, ShoppingCart, TrendingUp, Zap } from 'lucide-react';
+import { ShoppingCart, TrendingUp, Zap, DollarSign } from 'lucide-react';
 
 function StatCard({ icon: Icon, label, value, sub, color = 'blue' }) {
   const colors = {
@@ -41,6 +41,9 @@ export default function SellerDashboardPage() {
   const monthlyLimit = dash?.monthlyLimit ?? 2000;
   const todaySales = dash?.todaySales ?? 0;
   const monthSales = dash?.monthSales ?? 0;
+  const revenueToday = sales
+    .filter(s => new Date(s.created_at || s.createdAt) >= (() => { const d = new Date(); d.setHours(0,0,0,0); return d; })())
+    .reduce((sum, s) => sum + Number(s.amount || 0), 0);
 
   return (
     <div className="space-y-5 pb-6">
@@ -75,7 +78,7 @@ export default function SellerDashboardPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3">
-        <StatCard icon={ShoppingCart} label="Ventas hoy" value={todaySales} color="green" />
+        <StatCard icon={ShoppingCart} label="Ventas hoy" value={todaySales} sub={revenueToday > 0 ? `Q${revenueToday.toFixed(2)}` : null} color="green" />
         <StatCard icon={TrendingUp} label="Ventas mes" value={monthSales} color="purple" />
       </div>
 
@@ -102,10 +105,10 @@ export default function SellerDashboardPage() {
               <li key={sale.id} className="px-4 py-3 flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-900">
-                    {sale.voucher?.package?.name ?? 'Paquete'}
+                    {sale.package?.name ?? sale.voucher?.package?.name ?? 'Paquete'}
                   </p>
                   <p className="text-xs text-gray-400">
-                    {sale.client_name || 'Cliente'} — {format(new Date(sale.created_at || sale.createdAt), 'dd/MM HH:mm')}
+                    {sale.client_name || 'Sin nombre'} — {format(new Date(sale.created_at || sale.createdAt), 'dd/MM HH:mm')}
                   </p>
                 </div>
                 <span className="text-sm font-bold text-green-600">Q{Number(sale.amount).toFixed(2)}</span>

@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { packagesApi, vouchersApi } from '../../services/api';
+import { packagesApi, vouchersApi, reportsApi } from '../../services/api';
 import toast from 'react-hot-toast';
-import { CheckCircle, Wifi, Clock, Copy, RefreshCw } from 'lucide-react';
+import { CheckCircle, Wifi, Clock, Copy, RefreshCw, Wallet } from 'lucide-react';
 
-function PackageCard({ pkg, selected, onSelect }) {
+function PackageCard({ pkg, selected, onSelect, canAfford }) {
   const durationLabels = {
     minutes: 'min',
     hours: 'hr',
@@ -14,9 +14,12 @@ function PackageCard({ pkg, selected, onSelect }) {
   };
   return (
     <button
-      onClick={() => onSelect(pkg)}
+      onClick={() => canAfford && onSelect(pkg)}
+      disabled={!canAfford}
       className={`w-full text-left rounded-2xl border-2 p-4 transition-all ${
-        selected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 bg-white hover:border-blue-300'
+        !canAfford
+          ? 'border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed'
+          : selected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 bg-white hover:border-blue-300'
       }`}
     >
       <div className="flex items-center justify-between">
@@ -48,15 +51,21 @@ export default function SellVoucherPage() {
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [clientName, setClientName] = useState('');
   const [soldVoucher, setSoldVoucher] = useState(null);
+  const queryClient = useQueryClient();
 
   const { data: pkgsData } = useQuery({
     queryKey: ['packages-for-sell'],
     queryFn: () => packagesApi.list().then((r) => r.data),
   });
 
-  const packages = pkgsData?.data ?? pkgsData?.packages ?? [];
+  const { data: dashData } = useQuery({
+    queryKey: ['seller-dashboard'],
+    queryFn: () => reportsApi.sellerDashboard().then((r) => r.data),
+    staleTime: 10000,
+  });
 
-  const queryClient = useQueryClient();
+  const balance = dashData?.balance ?? null;
+  const packages = pkgsData?.data ?? pkgsData?.packages ?? [];
 
   const { mutate: sellVoucher, isPending } = useMutation({
     mutationFn: (data) => vouchersApi.sell(data),
@@ -163,6 +172,20 @@ export default function SellVoucherPage() {
         <p className="text-sm text-gray-500">Selecciona el paquete y confirma la venta</p>
       </div>
 
+      {/* Balance bar */}
+      {balance !== null && (
+        <div className={`flex items-center gap-3 px-4 py-3 rounded-xl ${
+          balance < 5 ? 'bg-red-50 text-red-700' : 'bg-blue-50 text-blue-700'
+        }`}>
+          <Wallet className="w-5 h-5 shrink-0" />
+          <div className="flex-1">
+            <p className="text-xs font-medium">Saldo disponible</p>
+            <p className="text-lg font-extrabold">Q{Number(balance).toFixed(2)}</p>
+          </div>
+          {balance < 5 && <p className="text-xs font-semibold">Saldo bajo</p>}
+        </div>
+      )}
+
       {/* Client name (optional) */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -190,6 +213,7 @@ export default function SellVoucherPage() {
                 pkg={pkg}
                 selected={selectedPackage?.id === pkg.id}
                 onSelect={setSelectedPackage}
+                canAfford={balance === null || Number(balance) >= Number(pkg.cost)}
               />
             ))}
           </div>
