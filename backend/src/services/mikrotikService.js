@@ -99,6 +99,8 @@ class MikrotikService {
       password,
       profile = 'default',
       comment = '',
+      server = null,
+      limitUptime = null,
       limitBytesIn = 0,
       limitBytesOut = 0,
       limitBytesTotal = 0,
@@ -108,16 +110,18 @@ class MikrotikService {
       '=name=' + username,
       '=password=' + password,
       '=profile=' + profile,
+      '=server=' + (server || device.hotspot_server || 'hotspot1'),
     ];
 
     if (comment) params.push('=comment=' + comment);
+    if (limitUptime) params.push('=limit-uptime=' + limitUptime);
     if (limitBytesIn > 0) params.push('=limit-bytes-in=' + limitBytesIn);
     if (limitBytesOut > 0) params.push('=limit-bytes-out=' + limitBytesOut);
     if (limitBytesTotal > 0) params.push('=limit-bytes-total=' + limitBytesTotal);
 
     try {
       const result = await conn.write(['/ip/hotspot/user/add', ...params]);
-      logger.info(`Usuario hotspot creado en ${device.name}: ${username}`);
+      logger.info(`Usuario hotspot creado en ${device.name}: ${username} | uptime: ${limitUptime || 'sin límite'}`);
       return result;
     } catch (error) {
       logger.error(`Error creando usuario ${username} en ${device.name}: ${error.message}`);

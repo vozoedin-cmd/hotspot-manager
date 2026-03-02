@@ -24,6 +24,16 @@ class VoucherService {
     const codes = MikrotikService.generateVoucherBatch(quantity, prefix);
     const durationMinutes = pkg.getDurationInMinutes();
 
+    // Calcular limit-uptime en formato MikroTik (HH:MM:SS o XdHH:MM:SS)
+    const totalSeconds = durationMinutes * 60;
+    const days = Math.floor(totalSeconds / 86400);
+    const remainSeconds = totalSeconds % 86400;
+    const hh = String(Math.floor(remainSeconds / 3600)).padStart(2, '0');
+    const mm = String(Math.floor((remainSeconds % 3600) / 60)).padStart(2, '0');
+    const ss = '00';
+    const limitUptime = days > 0 ? `${days}d${hh}:${mm}:${ss}` : `${hh}:${mm}:${ss}`;
+    const hotspotServer = device.hotspot_server || 'hotspot1';
+
     const t = await sequelize.transaction();
     const createdVouchers = [];
     const mikrotikErrors = [];
@@ -43,6 +53,8 @@ class VoucherService {
             username: code,
             password: password,
             profile: profileToUse,
+            server: hotspotServer,
+            limitUptime,
             comment: `BATCH:${batchId} PKG:${pkg.name}`,
           });
           mikrotikId = result?.['.id'] || result?.[0]?.ret;
@@ -62,6 +74,8 @@ class VoucherService {
                 username: code,
                 password: password,
                 profile: 'default',
+                server: hotspotServer,
+                limitUptime,
                 comment: `BATCH:${batchId} PKG:${pkg.name} (perfil:default)`,
               });
               mikrotikId = result2?.['.id'] || result2?.[0]?.ret;
