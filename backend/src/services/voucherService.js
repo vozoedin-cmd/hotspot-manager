@@ -135,19 +135,19 @@ class VoucherService {
     });
 
     try {
-      // Verificar vendedor
-      const seller = await User.findByPk(sellerId, {
-        include: [{ model: SellerBalance, as: 'balance' }],
-        transaction: t,
-        lock: true,
-      });
+      // Verificar vendedor (sin include para evitar FOR UPDATE en outer join)
+      const seller = await User.findByPk(sellerId, { transaction: t });
 
       if (!seller || !seller.is_active) {
         throw new Error('Vendedor no encontrado o inactivo');
       }
 
-      // Verificar saldo del vendedor
-      const balance = seller.balance;
+      // Verificar saldo del vendedor (lock separado en SellerBalance)
+      const balance = await SellerBalance.findOne({
+        where: { seller_id: sellerId },
+        transaction: t,
+        lock: t.LOCK.UPDATE,
+      });
       const pkg = await Package.findByPk(packageId, { transaction: t });
 
       if (!pkg) throw new Error('Paquete no encontrado');
