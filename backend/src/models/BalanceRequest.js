@@ -5,7 +5,7 @@ const BalanceRequest = sequelize.define(
   'BalanceRequest',
   {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-    seller_id: { type: DataTypes.INTEGER, allowNull: false },
+    seller_id: { type: DataTypes.UUID, allowNull: false },
     amount: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
     notes: { type: DataTypes.TEXT, allowNull: true },
     status: {
@@ -13,7 +13,7 @@ const BalanceRequest = sequelize.define(
       defaultValue: 'pending',
       allowNull: false,
     },
-    reviewed_by: { type: DataTypes.INTEGER, allowNull: true },
+    reviewed_by: { type: DataTypes.UUID, allowNull: true },
     review_notes: { type: DataTypes.TEXT, allowNull: true },
   },
   {
