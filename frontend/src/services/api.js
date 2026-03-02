@@ -92,6 +92,14 @@ export const sellersApi = {
   update: (id, data) => api.put(`/sellers/${id}`, data),
   reloadBalance: (id, data) => api.post(`/sellers/${id}/reload-balance`, data),
   transactions: (id, params) => api.get(`/sellers/${id}/transactions`, { params }),
+  // Balance Requests
+  requestBalance: (data) => api.post('/sellers/balance-request', data),
+  getMyBalanceRequests: () => api.get('/sellers/my-balance-requests'),
+  getBalanceRequests: (params) => api.get('/sellers/balance-requests', { params }),
+  getPendingRequestsCount: () => api.get('/sellers/balance-requests/count'),
+  getSellerRequests: (id) => api.get(`/sellers/${id}/balance-requests`),
+  approveRequest: (id, data) => api.post(`/sellers/balance-requests/${id}/approve`, data),
+  rejectRequest: (id, data) => api.post(`/sellers/balance-requests/${id}/reject`, data),
 };
 
 // ── MikroTik ──────────────────────────────────────

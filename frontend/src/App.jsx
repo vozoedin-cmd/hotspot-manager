@@ -16,6 +16,7 @@ import GenerateVouchersPage from './pages/admin/GenerateVouchersPage';
 import PackagesPage from './pages/admin/PackagesPage';
 import SellersPage from './pages/admin/SellersPage';
 import SellerDetailPage from './pages/admin/SellerDetailPage';
+import BalanceRequestsPage from './pages/admin/BalanceRequestsPage';
 import MikrotikDevicesPage from './pages/admin/MikrotikDevicesPage';
 import ReportsPage from './pages/admin/ReportsPage';
 import AuditPage from './pages/admin/AuditPage';
@@ -85,6 +86,7 @@ export default function App() {
           <Route path="packages" element={<PackagesPage />} />
           <Route path="sellers" element={<SellersPage />} />
           <Route path="sellers/:id" element={<SellerDetailPage />} />
+          <Route path="balance-requests" element={<BalanceRequestsPage />} />
           <Route path="mikrotik" element={<MikrotikDevicesPage />} />
           <Route path="reports" element={<ReportsPage />} />
           <Route path="audit" element={<AuditPage />} />

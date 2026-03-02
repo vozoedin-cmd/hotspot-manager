@@ -6,6 +6,7 @@ const Sale = require('./Sale');
 const SellerBalance = require('./SellerBalance');
 const Transaction = require('./Transaction');
 const AuditLog = require('./AuditLog');
+const BalanceRequest = require('./BalanceRequest');
 
 // ==========================
 // ASOCIACIONES
@@ -30,6 +31,11 @@ Sale.belongsTo(User, { foreignKey: 'seller_id', as: 'seller' });
 // Usuario <-> AuditLog
 User.hasMany(AuditLog, { foreignKey: 'user_id', as: 'audit_logs' });
 AuditLog.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+// Usuario <-> BalanceRequests
+User.hasMany(BalanceRequest, { foreignKey: 'seller_id', as: 'balance_requests' });
+BalanceRequest.belongsTo(User, { foreignKey: 'seller_id', as: 'seller' });
+BalanceRequest.belongsTo(User, { foreignKey: 'reviewed_by', as: 'reviewer' });
 
 // Paquete <-> Vouchers
 Package.hasMany(Voucher, { foreignKey: 'package_id', as: 'vouchers' });
@@ -60,4 +66,5 @@ module.exports = {
   SellerBalance,
   Transaction,
   AuditLog,
+  BalanceRequest,
 };

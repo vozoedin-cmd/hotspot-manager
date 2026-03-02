@@ -1,10 +1,12 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard, Ticket, Package, Users, Router,
-  BarChart3, ShieldCheck, LogOut, Menu, X, Wifi,
+  BarChart3, ShieldCheck, LogOut, Menu, X, Wifi, Wallet,
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
+import { sellersApi } from '../services/api';
 import toast from 'react-hot-toast';
 
 const navItems = [
@@ -12,6 +14,7 @@ const navItems = [
   { to: '/admin/vouchers', icon: Ticket, label: 'Fichas' },
   { to: '/admin/packages', icon: Package, label: 'Paquetes' },
   { to: '/admin/sellers', icon: Users, label: 'Vendedores' },
+  { to: '/admin/balance-requests', icon: Wallet, label: 'Solicitudes', badge: true },
   { to: '/admin/mikrotik', icon: Router, label: 'MikroTik' },
   { to: '/admin/reports', icon: BarChart3, label: 'Reportes' },
   { to: '/admin/audit', icon: ShieldCheck, label: 'Auditoría' },
@@ -21,6 +24,13 @@ export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
+
+  const { data: countData } = useQuery({
+    queryKey: ['balance-requests-count'],
+    queryFn: () => sellersApi.getPendingRequestsCount().then(r => r.data),
+    refetchInterval: 30000,
+  });
+  const pendingCount = countData?.count ?? 0;
 
   const handleLogout = async () => {
     await logout();
@@ -43,7 +53,7 @@ export default function AdminLayout() {
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-0.5">
-        {navItems.map(({ to, icon: Icon, label, exact }) => (
+        {navItems.map(({ to, icon: Icon, label, exact, badge }) => (
           <NavLink
             key={to}
             to={to}
@@ -58,7 +68,12 @@ export default function AdminLayout() {
             }
           >
             <Icon className="w-5 h-5 flex-shrink-0" />
-            {label}
+            <span className="flex-1">{label}</span>
+            {badge && pendingCount > 0 && (
+              <span className="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                {pendingCount}
+              </span>
+            )}
           </NavLink>
         ))}
       </nav>

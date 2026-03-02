@@ -1,12 +1,24 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { sellersApi, salesApi } from '../../services/api';
-import { ArrowLeft, DollarSign, ShoppingCart, TrendingUp } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { sellersApi } from '../../services/api';
+import { ArrowLeft, PlusCircle, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { format } from 'date-fns';
+import { useState } from 'react';
+import toast from 'react-hot-toast';
+
+const statusBadge = (status) => {
+  if (status === 'approved') return <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">Aprobada</span>;
+  if (status === 'rejected') return <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-600 font-medium">Rechazada</span>;
+  return <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 font-medium">Pendiente</span>;
+};
 
 export default function SellerDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const [reloadForm, setReloadForm] = useState({ amount: '', description: '' });
+  const [showReloadForm, setShowReloadForm] = useState(false);
 
   const { data: seller, isLoading } = useQuery({
     queryKey: ['seller', id],
@@ -18,7 +30,53 @@ export default function SellerDetailPage() {
     queryFn: () => sellersApi.transactions(id, { limit: 20 }).then(r => r.data),
   });
 
+  const { data: reqData, refetch: refetchReqs } = useQuery({
+    queryKey: ['seller-requests', id],
+    queryFn: () => sellersApi.getSellerRequests(id).then(r => r.data),
+  });
+
+  const { mutate: doReload, isPending: reloading } = useMutation({
+    mutationFn: (data) => sellersApi.reloadBalance(id, data),
+    onSuccess: (res) => {
+      toast.success(res.data.message);
+      setReloadForm({ amount: '', description: '' });
+      setShowReloadForm(false);
+      queryClient.invalidateQueries({ queryKey: ['seller', id] });
+      queryClient.invalidateQueries({ queryKey: ['transactions', id] });
+    },
+    onError: (err) => toast.error(err.response?.data?.message ?? 'Error al recargar'),
+  });
+
+  const { mutate: doApprove, isPending: approving } = useMutation({
+    mutationFn: (reqId) => sellersApi.approveRequest(reqId, {}),
+    onSuccess: (res) => {
+      toast.success(res.data.message);
+      refetchReqs();
+      queryClient.invalidateQueries({ queryKey: ['seller', id] });
+      queryClient.invalidateQueries({ queryKey: ['balance-requests-count'] });
+    },
+    onError: (err) => toast.error(err.response?.data?.message ?? 'Error'),
+  });
+
+  const { mutate: doReject } = useMutation({
+    mutationFn: (reqId) => sellersApi.rejectRequest(reqId, {}),
+    onSuccess: () => {
+      toast.success('Solicitud rechazada');
+      refetchReqs();
+      queryClient.invalidateQueries({ queryKey: ['balance-requests-count'] });
+    },
+    onError: (err) => toast.error(err.response?.data?.message ?? 'Error'),
+  });
+
   const transactions = txData?.data || [];
+  const requests = reqData?.data || [];
+  const pendingRequests = requests.filter(r => r.status === 'pending');
+
+  const handleReload = (e) => {
+    e.preventDefault();
+    if (!reloadForm.amount || parseFloat(reloadForm.amount) <= 0) return toast.error('Ingresa un monto válido');
+    doReload(reloadForm);
+  };
 
   if (isLoading) return (
     <div className="animate-pulse space-y-4">
@@ -31,6 +89,7 @@ export default function SellerDetailPage() {
 
   return (
     <div className="space-y-5 max-w-3xl">
+      {/* Header */}
       <div className="flex items-center gap-3">
         <button onClick={() => navigate(-1)} className="p-2 hover:bg-gray-100 rounded-lg">
           <ArrowLeft className="w-5 h-5 text-gray-600" />
@@ -59,6 +118,91 @@ export default function SellerDetailPage() {
           <p className="text-2xl font-bold text-gray-700">Q{parseFloat(seller.balance?.total_spent || 0).toFixed(2)}</p>
         </div>
       </div>
+
+      {/* Solicitudes pendientes del vendedor */}
+      {pendingRequests.length > 0 && (
+        <div className="card border-l-4 border-yellow-400 p-0 overflow-hidden">
+          <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-2">
+            <Clock className="w-4 h-4 text-yellow-500" />
+            <h2 className="font-semibold text-gray-800 text-sm">
+              Solicitudes pendientes ({pendingRequests.length})
+            </h2>
+          </div>
+          <div className="divide-y divide-gray-50">
+            {pendingRequests.map(req => (
+              <div key={req.id} className="flex items-center gap-3 px-5 py-3">
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-gray-800">Q{parseFloat(req.amount).toFixed(2)}</p>
+                  {req.notes && <p className="text-xs text-gray-500">{req.notes}</p>}
+                  <p className="text-xs text-gray-400">{format(new Date(req.created_at), 'dd/MM/yy HH:mm')}</p>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => doApprove(req.id)} disabled={approving}
+                    className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 disabled:opacity-60">
+                    <CheckCircle className="w-3.5 h-3.5" /> Aprobar
+                  </button>
+                  <button onClick={() => doReject(req.id)}
+                    className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-600 text-xs rounded-lg hover:bg-red-50 hover:text-red-600">
+                    <XCircle className="w-3.5 h-3.5" /> Rechazar
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Recargar Saldo Manual */}
+      <div className="card p-0 overflow-hidden">
+        <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between cursor-pointer hover:bg-gray-50"
+          onClick={() => setShowReloadForm(!showReloadForm)}>
+          <div className="flex items-center gap-2">
+            <PlusCircle className="w-4 h-4 text-blue-600" />
+            <h2 className="font-semibold text-gray-800 text-sm">Recargar saldo manualmente</h2>
+          </div>
+          <span className="text-xs text-blue-600">{showReloadForm ? 'Cerrar' : 'Abrir'}</span>
+        </div>
+        {showReloadForm && (
+          <form onSubmit={handleReload} className="px-5 py-4 space-y-3 bg-blue-50/30">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Monto (Q)</label>
+                <input type="number" min="0.01" step="0.01" placeholder="Ej: 50.00" className="input-field"
+                  value={reloadForm.amount} onChange={e => setReloadForm(f => ({ ...f, amount: e.target.value }))} required />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Descripción (opcional)</label>
+                <input type="text" placeholder="Recarga manual" className="input-field"
+                  value={reloadForm.description} onChange={e => setReloadForm(f => ({ ...f, description: e.target.value }))} />
+              </div>
+            </div>
+            <button type="submit" disabled={reloading} className="btn-primary text-sm disabled:opacity-60">
+              {reloading ? 'Recargando...' : `Recargar${reloadForm.amount ? ' Q' + parseFloat(reloadForm.amount || 0).toFixed(2) : ''}`}
+            </button>
+          </form>
+        )}
+      </div>
+
+      {/* Historial de solicitudes */}
+      {requests.length > 0 && (
+        <div className="card p-0 overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-100">
+            <h2 className="font-semibold text-gray-800">Historial de solicitudes de saldo</h2>
+          </div>
+          <div className="divide-y divide-gray-50">
+            {requests.map(req => (
+              <div key={req.id} className="flex items-center justify-between px-5 py-3">
+                <div>
+                  <p className="text-sm text-gray-700 font-medium">Q{parseFloat(req.amount).toFixed(2)}</p>
+                  {req.notes && <p className="text-xs text-gray-500">{req.notes}</p>}
+                  <p className="text-xs text-gray-400">{format(new Date(req.created_at), 'dd/MM/yy HH:mm')}</p>
+                </div>
+                {statusBadge(req.status)}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Transactions */}
       <div className="card p-0 overflow-hidden">
