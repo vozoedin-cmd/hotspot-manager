@@ -91,13 +91,16 @@ const generateVouchers = async (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-    const { device_id, package_id, quantity, prefix } = req.body;
+    const { device_id, package_id, quantity, prefix, voucher_type, code_length, pwd_length } = req.body;
 
     const result = await voucherService.generateBatch({
       deviceId: device_id,
       packageId: package_id,
       quantity: Math.min(quantity, 500),
       prefix: prefix || 'HS',
+      voucherType: voucher_type || 'user_password',
+      codeLength: parseInt(code_length) || 6,
+      pwdLength: parseInt(pwd_length) || 6,
       createdBy: req.user.id,
     });
 
@@ -218,6 +221,9 @@ const generateValidation = [
   body('device_id').isUUID().withMessage('device_id inválido'),
   body('package_id').isUUID().withMessage('package_id inválido'),
   body('quantity').isInt({ min: 1, max: 500 }).withMessage('Cantidad entre 1 y 500'),
+  body('voucher_type').optional().isIn(['pin', 'user_password']).withMessage('Tipo inválido'),
+  body('code_length').optional().isInt({ min: 4, max: 12 }).withMessage('Longitud de código entre 4 y 12'),
+  body('pwd_length').optional().isInt({ min: 4, max: 12 }).withMessage('Longitud de contraseña entre 4 y 12'),
 ];
 
 const sellValidation = [

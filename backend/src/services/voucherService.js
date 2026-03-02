@@ -13,7 +13,7 @@ class VoucherService {
   /**
    * Generar un lote de fichas y crearlas en MikroTik + BD
    */
-  async generateBatch({ deviceId, packageId, quantity = 10, prefix = 'HS', createdBy }) {
+  async generateBatch({ deviceId, packageId, quantity = 10, prefix = 'HS', voucherType = 'user_password', codeLength = 6, pwdLength = 6, createdBy }) {
     const device = await MikrotikDevice.findByPk(deviceId);
     if (!device) throw new Error('Dispositivo MikroTik no encontrado');
 
@@ -21,7 +21,7 @@ class VoucherService {
     if (!pkg) throw new Error('Paquete no encontrado');
 
     const batchId = uuidv4();
-    const codes = MikrotikService.generateVoucherBatch(quantity, prefix);
+    const codes = MikrotikService.generateVoucherBatch(quantity, prefix, codeLength);
     const durationMinutes = pkg.getDurationInMinutes();
 
     // Calcular limit-uptime en formato MikroTik (HH:MM:SS o XdHH:MM:SS)
@@ -40,7 +40,10 @@ class VoucherService {
 
     try {
       for (const code of codes) {
-        const password = MikrotikService.generateVoucherCode('', 6);
+        // Generar contraseña según tipo
+        const password = voucherType === 'pin'
+          ? code   // PIN: usuario y contraseña son iguales
+          : MikrotikService.generateVoucherCode('', pwdLength);
 
         // Crear en MikroTik
         let mikrotikId = null;
