@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { reportsApi, salesApi } from '../../services/api';
+import { reportsApi } from '../../services/api';
 import useAuthStore from '../../store/authStore';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -33,15 +33,10 @@ export default function SellerDashboardPage() {
   const { data: dash } = useQuery({
     queryKey: ['seller-dashboard'],
     queryFn: () => reportsApi.sellerDashboard().then((r) => r.data),
+    refetchInterval: 30000,
   });
 
-  const { data: recentSales } = useQuery({
-    queryKey: ['recent-sales'],
-    queryFn: () =>
-      salesApi.list({ limit: 5, page: 1 }).then((r) => r.data),
-  });
-
-  const sales = recentSales?.sales ?? recentSales?.rows ?? [];
+  const sales = dash?.recentSales ?? [];
   const balance = dash?.balance ?? 0;
   const monthlyLimit = dash?.monthlyLimit ?? 2000;
   const todaySales = dash?.todaySales ?? 0;

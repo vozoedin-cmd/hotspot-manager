@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { packagesApi, vouchersApi } from '../../services/api';
 import toast from 'react-hot-toast';
 import { CheckCircle, Wifi, Clock, Copy, RefreshCw } from 'lucide-react';
@@ -56,12 +56,17 @@ export default function SellVoucherPage() {
 
   const packages = pkgsData?.data ?? pkgsData?.packages ?? [];
 
+  const queryClient = useQueryClient();
+
   const { mutate: sellVoucher, isPending } = useMutation({
     mutationFn: (data) => vouchersApi.sell(data),
     onSuccess: (res) => {
-      setSoldVoucher(res.data.voucher ?? res.data);
+      // res.data = { message, data: { voucher, sale_id, balance_remaining } }
+      setSoldVoucher(res.data?.data?.voucher ?? res.data?.voucher ?? res.data?.data ?? res.data);
       setSelectedPackage(null);
       setClientName('');
+      queryClient.invalidateQueries({ queryKey: ['seller-dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['packages-for-sell'] });
       toast.success('¡Ficha vendida exitosamente!');
     },
     onError: (err) => {

@@ -1,6 +1,6 @@
 const { Op, fn, col, literal } = require('sequelize');
 const { sequelize } = require('../config/database');
-const { Sale, Voucher, User, Package, MikrotikDevice, Transaction } = require('../models');
+const { Sale, Voucher, User, Package, MikrotikDevice, Transaction, SellerBalance } = require('../models');
 
 /**
  * GET /api/reports/dashboard - Resumen general (admin)
@@ -205,16 +205,17 @@ const getSellerDashboard = async (req, res, next) => {
     const sellerId = req.user.id;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
 
-    const [salesToday, salesMonth, totalSales, recentSales] = await Promise.all([
+    const [sellerBalance, salesToday, salesMonth, recentSales, recentTransactions] = await Promise.all([
+      SellerBalance.findOne({ where: { seller_id: sellerId } }),
       Sale.count({ where: { seller_id: sellerId, created_at: { [Op.gte]: today } } }),
-      Sale.sum('amount', {
+      Sale.count({
         where: {
           seller_id: sellerId,
-          created_at: { [Op.gte]: new Date(today.getFullYear(), today.getMonth(), 1) },
+          created_at: { [Op.gte]: monthStart },
         },
       }),
-      Sale.count({ where: { seller_id: sellerId } }),
       Sale.findAll({
         where: { seller_id: sellerId },
         include: [
@@ -224,15 +225,22 @@ const getSellerDashboard = async (req, res, next) => {
         order: [['created_at', 'DESC']],
         limit: 10,
       }),
+      Transaction.findAll({
+        where: { seller_id: sellerId },
+        order: [['created_at', 'DESC']],
+        limit: 10,
+      }),
     ]);
 
     return res.json({
-      data: {
-        sales_today: salesToday,
-        revenue_month: parseFloat(salesMonth) || 0,
-        total_sales: totalSales,
-        recent_sales: recentSales,
-      },
+      balance: parseFloat(sellerBalance?.balance) || 0,
+      monthlyLimit: parseFloat(sellerBalance?.monthly_limit) || 2000,
+      totalEarned: parseFloat(sellerBalance?.total_earned) || 0,
+      totalSpent: parseFloat(sellerBalance?.total_spent) || 0,
+      todaySales: salesToday,
+      monthSales: salesMonth,
+      recentSales,
+      recentTransactions,
     });
   } catch (error) {
     next(error);
