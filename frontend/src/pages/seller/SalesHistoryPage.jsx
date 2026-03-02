@@ -22,8 +22,8 @@ export default function SalesHistoryPage() {
     keepPreviousData: true,
   });
 
-  const sales = data?.sales ?? data?.rows ?? [];
-  const total = data?.total ?? data?.count ?? 0;
+  const sales = data?.data ?? data?.sales ?? data?.rows ?? [];
+  const total = data?.pagination?.total ?? data?.total ?? data?.count ?? 0;
   const totalPages = Math.ceil(total / LIMIT);
 
   return (
