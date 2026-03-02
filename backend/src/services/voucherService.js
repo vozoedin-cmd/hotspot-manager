@@ -33,45 +33,64 @@ class VoucherService {
         const password = MikrotikService.generateVoucherCode('', 6);
 
         // Crear en MikroTik
+        let mikrotikId = null;
+        let mikrotikOk = false;
+        const profileToUse = pkg.mikrotik_profile || 'default';
+
         try {
+          // Primer intento con el perfil configurado
           const result = await mikrotikService.createHotspotUser(device, {
             username: code,
             password: password,
-            profile: pkg.mikrotik_profile || 'default',
+            profile: profileToUse,
             comment: `BATCH:${batchId} PKG:${pkg.name}`,
           });
-
-          const mikrotikId = result?.['.id'] || result?.[0]?.ret;
-
-          const voucher = await Voucher.create({
-            code,
-            password,
-            status: 'available',
-            package_id: packageId,
-            device_id: deviceId,
-            batch_id: batchId,
-            mikrotik_id: mikrotikId,
-            comment: `Lote ${batchId}`,
-          }, { transaction: t });
-
-          createdVouchers.push(voucher);
+          mikrotikId = result?.['.id'] || result?.[0]?.ret;
+          mikrotikOk = true;
         } catch (mtError) {
-          mikrotikErrors.push({ code, error: mtError.message });
-          logger.warn(`Error creando ${code} en MikroTik: ${mtError.message}`);
+          // Si el error es de perfil no encontrado, reintentar con "default"
+          const isProfileError = mtError.message && (
+            mtError.message.includes('input does not match any value of profile') ||
+            mtError.message.includes('no such item') ||
+            mtError.message.toLowerCase().includes('profile')
+          );
 
-          // Crear igual en BD como disponible (puede sincronizarse después)
-          const voucher = await Voucher.create({
-            code,
-            password,
-            status: 'available',
-            package_id: packageId,
-            device_id: deviceId,
-            batch_id: batchId,
-            comment: `Lote ${batchId} - Pendiente sync MT`,
-          }, { transaction: t });
-
-          createdVouchers.push(voucher);
+          if (isProfileError && profileToUse !== 'default') {
+            logger.warn(`Perfil "${profileToUse}" no existe en MikroTik para ${code}, reintentando con "default"`);
+            try {
+              const result2 = await mikrotikService.createHotspotUser(device, {
+                username: code,
+                password: password,
+                profile: 'default',
+                comment: `BATCH:${batchId} PKG:${pkg.name} (perfil:default)`,
+              });
+              mikrotikId = result2?.['.id'] || result2?.[0]?.ret;
+              mikrotikOk = true;
+              logger.info(`${code} creado en MikroTik con perfil "default" (original: ${profileToUse})`);
+            } catch (mtError2) {
+              mikrotikErrors.push({ code, error: mtError2.message });
+              logger.error(`Error creando ${code} en MikroTik (perfil default): ${mtError2.message}`);
+            }
+          } else {
+            mikrotikErrors.push({ code, error: mtError.message });
+            logger.error(`Error creando ${code} en MikroTik: ${mtError.message}`);
+          }
         }
+
+        const voucher = await Voucher.create({
+          code,
+          password,
+          status: 'available',
+          package_id: packageId,
+          device_id: deviceId,
+          batch_id: batchId,
+          mikrotik_id: mikrotikOk ? mikrotikId : null,
+          comment: mikrotikOk
+            ? `Lote ${batchId}`
+            : `Lote ${batchId} - Pendiente sync MT`,
+        }, { transaction: t });
+
+        createdVouchers.push(voucher);
       }
 
       await t.commit();
