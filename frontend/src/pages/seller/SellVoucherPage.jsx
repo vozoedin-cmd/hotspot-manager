@@ -65,13 +65,17 @@ export default function SellVoucherPage() {
       toast.success('¡Ficha vendida exitosamente!');
     },
     onError: (err) => {
-      toast.error(err.response?.data?.message ?? 'Error al vender la ficha');
+      const msg = err.response?.data?.error
+        ?? err.response?.data?.message
+        ?? err.response?.data?.errors?.[0]?.msg
+        ?? 'Error al vender la ficha';
+      toast.error(msg);
     },
   });
 
   const handleSell = () => {
     if (!selectedPackage) return toast.error('Selecciona un paquete');
-    sellVoucher({ packageId: selectedPackage.id, clientName });
+    sellVoucher({ package_id: selectedPackage.id, client_name: clientName || undefined });
   };
 
   const copyText = (text) => {
