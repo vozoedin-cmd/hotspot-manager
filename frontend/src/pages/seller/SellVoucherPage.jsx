@@ -91,6 +91,7 @@ export default function SellVoucherPage() {
   const reset = () => setSoldVoucher(null);
 
   if (soldVoucher) {
+    const isPin = soldVoucher.voucher_type === 'pin' || soldVoucher.code === soldVoucher.password;
     return (
       <div className="flex flex-col items-center justify-center min-h-[70vh] space-y-5 px-4">
         <div className="flex flex-col items-center gap-3">
@@ -104,25 +105,40 @@ export default function SellVoucherPage() {
         </div>
 
         <div className="w-full max-w-sm bg-gray-900 rounded-2xl p-5 space-y-4 text-white">
-          <div>
-            <p className="text-xs text-gray-400 mb-1">USUARIO / CÓDIGO</p>
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-2xl font-mono font-bold tracking-wider">{soldVoucher.code}</p>
-              <button onClick={() => copyText(soldVoucher.code)} className="p-1.5 bg-gray-700 rounded-lg hover:bg-gray-600">
-                <Copy className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-          {soldVoucher.password && (
+          {isPin ? (
             <div>
-              <p className="text-xs text-gray-400 mb-1">CONTRASEÑA</p>
+              <p className="text-xs text-gray-400 mb-1">PIN DE ACCESO</p>
               <div className="flex items-center justify-between gap-2">
-                <p className="text-2xl font-mono font-bold tracking-wider">{soldVoucher.password}</p>
-                <button onClick={() => copyText(soldVoucher.password)} className="p-1.5 bg-gray-700 rounded-lg hover:bg-gray-600">
+                <p className="text-3xl font-mono font-bold tracking-widest">{soldVoucher.code}</p>
+                <button onClick={() => copyText(soldVoucher.code)} className="p-1.5 bg-gray-700 rounded-lg hover:bg-gray-600">
                   <Copy className="w-4 h-4" />
                 </button>
               </div>
+              <p className="text-xs text-gray-500 mt-1">Usa este PIN como usuario y contraseña</p>
             </div>
+          ) : (
+            <>
+              <div>
+                <p className="text-xs text-gray-400 mb-1">USUARIO / CÓDIGO</p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-2xl font-mono font-bold tracking-wider">{soldVoucher.code}</p>
+                  <button onClick={() => copyText(soldVoucher.code)} className="p-1.5 bg-gray-700 rounded-lg hover:bg-gray-600">
+                    <Copy className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+              {soldVoucher.password && (
+                <div>
+                  <p className="text-xs text-gray-400 mb-1">CONTRASEÑA</p>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-2xl font-mono font-bold tracking-wider">{soldVoucher.password}</p>
+                    <button onClick={() => copyText(soldVoucher.password)} className="p-1.5 bg-gray-700 rounded-lg hover:bg-gray-600">
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
           <div className="border-t border-gray-700 pt-3 text-sm text-gray-300">
             <p>Paquete: <span className="text-white font-medium">{soldVoucher.package?.name ?? '—'}</span></p>

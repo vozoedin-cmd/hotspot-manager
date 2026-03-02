@@ -94,6 +94,12 @@ const Voucher = sequelize.define('Voucher', {
     type: DataTypes.STRING(17),
     allowNull: true,
   },
+  voucher_type: {
+    type: DataTypes.STRING(20),
+    defaultValue: 'user_password',
+    allowNull: false,
+    comment: 'pin | user_password',
+  },
 }, {
   tableName: 'vouchers',
   indexes: [

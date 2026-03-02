@@ -91,7 +91,7 @@ const generateVouchers = async (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-    const { device_id, package_id, quantity, prefix, voucher_type, code_length, pwd_length } = req.body;
+    const { device_id, package_id, quantity, prefix, voucher_type, code_length, pwd_length, numbers_only } = req.body;
 
     const result = await voucherService.generateBatch({
       deviceId: device_id,
@@ -101,6 +101,7 @@ const generateVouchers = async (req, res, next) => {
       voucherType: voucher_type || 'user_password',
       codeLength: parseInt(code_length) || 6,
       pwdLength: parseInt(pwd_length) || 6,
+      numbersOnly: numbers_only === true || numbers_only === 'true',
       createdBy: req.user.id,
     });
 
@@ -161,6 +162,7 @@ const sellVoucher = async (req, res, next) => {
           id: result.voucher.id,
           code: result.voucher.code,
           password: result.voucher.password,
+          voucher_type: result.voucher.voucher_type ?? 'user_password',
           package: result.voucher.package,
         },
         sale_id: result.sale.id,

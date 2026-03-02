@@ -16,6 +16,7 @@ export default function GenerateVouchersPage() {
     voucher_type: 'user_password',
     code_length: 6,
     pwd_length: 6,
+    numbers_only: false,
   });
 
   const { data: packages } = useQuery({
@@ -173,7 +174,7 @@ export default function GenerateVouchersPage() {
         {/* Code length */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="label">Dígitos del código</label>
+            <label className="label">{form.voucher_type === 'pin' ? 'Dígitos del PIN' : 'Dígitos del código'}</label>
             <input
               type="number"
               className="input"
@@ -200,14 +201,33 @@ export default function GenerateVouchersPage() {
           )}
         </div>
 
+        {/* Numbers only toggle */}
+        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+          <div>
+            <p className="text-sm font-medium text-gray-700">Solo números</p>
+            <p className="text-xs text-gray-400">Genera códigos únicamente con dígitos (2–9)</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setForm({ ...form, numbers_only: !form.numbers_only })}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+              form.numbers_only ? 'bg-blue-600' : 'bg-gray-300'
+            }`}
+          >
+            <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+              form.numbers_only ? 'translate-x-6' : 'translate-x-1'
+            }`} />
+          </button>
+        </div>
+
         {/* Summary */}
         {form.device_id && form.package_id && form.quantity > 0 && (
           <div className="bg-gray-50 rounded-lg p-4 text-sm space-y-1">
             <p className="font-semibold text-gray-700 mb-2">Resumen:</p>
             <p className="text-gray-600">• <strong>{form.quantity}</strong> fichas en router <strong>{devices?.find(d => d.id === form.device_id)?.name}</strong></p>
             <p className="text-gray-600">• Paquete: <strong>{selectedPkg?.name}</strong></p>
-            <p className="text-gray-600">• Tipo: <strong>{form.voucher_type === 'pin' ? 'Solo PIN' : 'Usuario + Contraseña'}</strong></p>
-            <p className="text-gray-600">• Formato: <strong>{form.prefix}{Array(form.code_length).fill('X').join('')}</strong>{form.voucher_type === 'user_password' ? ` + contraseña de ${form.pwd_length} dígitos` : ' (PIN único)'}</p>
+            <p className="text-gray-600">• Tipo: <strong>{form.voucher_type === 'pin' ? 'Solo PIN' : 'Usuario + Contraseña'}</strong>{form.numbers_only ? ' · solo números' : ''}</p>
+            <p className="text-gray-600">• Formato: <strong>{form.prefix}{Array(form.code_length).fill(form.numbers_only ? '0' : 'X').join('')}</strong>{form.voucher_type === 'user_password' ? ` + contraseña de ${form.pwd_length} díigitos` : ' (PIN único)'}</p>
             <p className="text-gray-600">• Valor total de venta: <strong>Q{(form.quantity * (selectedPkg?.price || 0)).toFixed(2)}</strong></p>
           </div>
         )}

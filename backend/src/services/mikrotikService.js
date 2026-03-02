@@ -300,8 +300,10 @@ class MikrotikService {
   /**
    * Generar código único para una ficha
    */
-  static generateVoucherCode(prefix = 'HS', length = 8) {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Sin caracteres confusos (0,O,I,1)
+  static generateVoucherCode(prefix = 'HS', length = 8, numbersOnly = false) {
+    const chars = numbersOnly
+      ? '23456789'  // Solo números sin confusos (0,1)
+      : 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Sin caracteres confusos (0,O,I,1)
     let code = prefix;
     for (let i = 0; i < length; i++) {
       code += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -312,10 +314,10 @@ class MikrotikService {
   /**
    * Generar lote de códigos únicos
    */
-  static generateVoucherBatch(count = 10, prefix = 'HS', length = 8) {
+  static generateVoucherBatch(count = 10, prefix = 'HS', length = 8, numbersOnly = false) {
     const codes = new Set();
     while (codes.size < count) {
-      codes.add(MikrotikService.generateVoucherCode(prefix, length));
+      codes.add(MikrotikService.generateVoucherCode(prefix, length, numbersOnly));
     }
     return Array.from(codes);
   }
