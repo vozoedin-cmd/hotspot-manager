@@ -40,7 +40,7 @@ async function startServer() {
     await sequelize.authenticate();
     logger.info('Conexión a PostgreSQL establecida correctamente');
 
-    await sequelize.sync({ alter: true });
+    await sequelize.sync({ force: false });
     logger.info('Modelos sincronizados con la base de datos');
 
     // Iniciar sincronización periódica con MikroTik
