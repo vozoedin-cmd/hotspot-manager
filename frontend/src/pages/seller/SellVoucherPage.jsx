@@ -54,7 +54,7 @@ export default function SellVoucherPage() {
     queryFn: () => packagesApi.list().then((r) => r.data),
   });
 
-  const packages = pkgsData?.packages ?? pkgsData ?? [];
+  const packages = pkgsData?.data ?? pkgsData?.packages ?? [];
 
   const { mutate: sellVoucher, isPending } = useMutation({
     mutationFn: (data) => vouchersApi.sell(data),
@@ -148,7 +148,7 @@ export default function SellVoucherPage() {
           value={clientName}
           onChange={(e) => setClientName(e.target.value)}
           placeholder="Ej: Juan Pérez"
-          className="input-field"
+          className="input"
         />
       </div>
 
