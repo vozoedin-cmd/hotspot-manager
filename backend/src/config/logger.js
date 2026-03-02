@@ -67,8 +67,7 @@ const logger = winston.createLogger({
   ],
 });
 
-if (process.env.NODE_ENV !== 'production') {
-  logger.add(new winston.transports.Console({ format: consoleFormat }));
-}
+// En Docker/producción siempre loguear a stdout para que funcione `docker logs`
+logger.add(new winston.transports.Console({ format: consoleFormat }));
 
 module.exports = logger;
