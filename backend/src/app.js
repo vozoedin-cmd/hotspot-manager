@@ -20,6 +20,9 @@ const logger = require('./config/logger');
 
 const app = express();
 
+// Confiar en el proxy (nginx) para leer la IP real del cliente
+app.set('trust proxy', 1);
+
 // ==========================
 // SEGURIDAD Y MIDDLEWARES
 // ==========================
@@ -53,11 +56,13 @@ const globalLimiter = rateLimit({
 });
 app.use('/api/', globalLimiter);
 
-// Rate limiting para autenticación (más estricto)
+// Rate limiting para autenticación (por IP real del cliente)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
-  message: { error: 'Demasiados intentos de inicio de sesión.' },
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Demasiados intentos de inicio de sesión, intenta en 15 minutos.' },
 });
 
 // ==========================
