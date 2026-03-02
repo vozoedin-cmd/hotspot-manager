@@ -112,8 +112,7 @@ export const mikrotikApi = {
   sync: (id) => api.post(`/mikrotik/${id}/sync`),
   activeUsers: (id) => api.get(`/mikrotik/${id}/active-users`),
   profiles: (id) => api.get(`/mikrotik/${id}/profiles`),
-  delete: (id) => api.delete(`/mikrotik/${id}`),
-};
+  delete: (id) => api.delete(`/mikrotik/${id}`),  setupVpnForward: (data) => api.post('/mikrotik/setup-vpn-forward', data),};
 
 // ── Ventas ────────────────────────────────────────
 export const salesApi = {

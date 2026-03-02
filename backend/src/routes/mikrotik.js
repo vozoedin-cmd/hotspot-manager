@@ -3,7 +3,7 @@ const router = express.Router();
 const {
   listDevices, getDevice, createDevice, updateDevice,
   testConnection, syncDevice, getActiveUsers, getProfiles,
-  deleteDevice, deviceValidation,
+  deleteDevice, setupVpnForward, deviceValidation,
 } = require('../controllers/mikrotikController');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { auditLog } = require('../middleware/auditLog');
@@ -17,6 +17,7 @@ router.get('/:id/profiles', requireAdmin, getProfiles);
 
 router.post('/', requireAdmin, deviceValidation, auditLog('CREATE_DEVICE', 'mikrotik_device'), createDevice);
 router.put('/:id', requireAdmin, auditLog('UPDATE_DEVICE', 'mikrotik_device'), updateDevice);
+router.post('/setup-vpn-forward', requireAdmin, setupVpnForward);
 router.post('/:id/test', requireAdmin, testConnection);
 router.post('/:id/sync', requireAdmin, auditLog('SYNC_DEVICE', 'mikrotik_device'), syncDevice);
 router.delete('/:id', requireAdmin, auditLog('DELETE_DEVICE', 'mikrotik_device'), deleteDevice);
