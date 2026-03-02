@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { vouchersApi, packagesApi, mikrotikApi } from '../../services/api';
-import { Plus, Search, Filter, RefreshCw, Ban, Eye } from 'lucide-react';
+import { Plus, RefreshCw, Ban, Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 
@@ -14,6 +14,24 @@ const STATUS_LABELS = {
   expired: { label: 'Expirada', cls: 'badge-expired' },
   disabled: { label: 'Deshabilitada', cls: 'badge-disabled' },
 };
+
+function PasswordCell({ password }) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="flex items-center gap-1">
+      <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs font-mono text-gray-800">
+        {show ? password : '••••••'}
+      </code>
+      <button
+        onClick={() => setShow(s => !s)}
+        className="text-gray-400 hover:text-gray-600 transition-colors"
+        title={show ? 'Ocultar' : 'Ver contraseña'}
+      >
+        {show ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+      </button>
+    </div>
+  );
+}
 
 export default function VouchersPage() {
   const qc = useQueryClient();
@@ -111,6 +129,7 @@ export default function VouchersPage() {
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Código</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Contraseña</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Paquete</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Estado</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Router</th>
@@ -132,7 +151,7 @@ export default function VouchersPage() {
                 ))
               ) : vouchers.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center text-gray-400 py-12">
+                  <td colSpan={8} className="text-center text-gray-400 py-12">
                     No hay fichas con los filtros aplicados
                   </td>
                 </tr>
@@ -145,6 +164,9 @@ export default function VouchersPage() {
                         <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs font-mono font-semibold text-gray-800">
                           {v.code}
                         </code>
+                      </td>
+                      <td className="px-4 py-3">
+                        {v.password ? <PasswordCell password={v.password} /> : <span className="text-gray-300 text-xs">-</span>}
                       </td>
                       <td className="px-4 py-3 text-gray-700">{v.package?.name || '-'}</td>
                       <td className="px-4 py-3">
