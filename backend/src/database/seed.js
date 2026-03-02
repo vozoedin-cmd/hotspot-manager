@@ -6,7 +6,7 @@ const logger = require('../config/logger');
 async function seed() {
   try {
     await sequelize.authenticate();
-    await sequelize.sync({ alter: true });
+    await sequelize.sync({ force: false });
     console.log('Conexión a base de datos establecida');
 
     // ---- Admin inicial ----
