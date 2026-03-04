@@ -45,6 +45,10 @@ Voucher.belongsTo(Package, { foreignKey: 'package_id', as: 'package' });
 Package.hasMany(Sale, { foreignKey: 'package_id', as: 'sales' });
 Sale.belongsTo(Package, { foreignKey: 'package_id', as: 'package' });
 
+// Usuario <-> Dispositivo MikroTik (vendedor asignado a un dispositivo)
+User.belongsTo(MikrotikDevice, { foreignKey: 'device_id', as: 'device' });
+MikrotikDevice.hasMany(User, { foreignKey: 'device_id', as: 'sellers' });
+
 // Dispositivo MikroTik <-> Vouchers
 MikrotikDevice.hasMany(Voucher, { foreignKey: 'device_id', as: 'vouchers' });
 Voucher.belongsTo(MikrotikDevice, { foreignKey: 'device_id', as: 'device' });

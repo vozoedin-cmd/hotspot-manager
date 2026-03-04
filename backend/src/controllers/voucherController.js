@@ -185,7 +185,11 @@ const getAvailableCount = async (req, res, next) => {
     const { package_id, device_id } = req.query;
     if (!package_id) return res.status(400).json({ error: 'package_id requerido' });
 
-    const result = await voucherService.getAvailableVouchers(package_id, device_id);
+    // Si es vendedor con dispositivo asignado, filtrar por ese dispositivo
+    const effectiveDeviceId = device_id ||
+      (req.user.role === 'seller' && req.user.device_id ? req.user.device_id : null);
+
+    const result = await voucherService.getAvailableVouchers(package_id, effectiveDeviceId);
     return res.json({ data: result });
   } catch (error) {
     next(error);

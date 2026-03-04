@@ -20,9 +20,13 @@ const listSellers = async (req, res, next) => {
       ];
     }
 
+    const { MikrotikDevice } = require('../models');
     const sellers = await User.findAll({
       where,
-      include: [{ model: SellerBalance, as: 'balance' }],
+      include: [
+        { model: SellerBalance, as: 'balance' },
+        { model: MikrotikDevice, as: 'device', attributes: ['id', 'name', 'zone'], required: false },
+      ],
       order: [['name', 'ASC']],
     });
 
@@ -39,9 +43,13 @@ const getSeller = async (req, res, next) => {
   try {
     const id = req.user.role === 'seller' ? req.user.id : req.params.id;
 
+    const { MikrotikDevice } = require('../models');
     const seller = await User.findOne({
       where: { id, role: 'seller' },
-      include: [{ model: SellerBalance, as: 'balance' }],
+      include: [
+        { model: SellerBalance, as: 'balance' },
+        { model: MikrotikDevice, as: 'device', attributes: ['id', 'name', 'zone'], required: false },
+      ],
     });
 
     if (!seller) return res.status(404).json({ error: 'Vendedor no encontrado' });
@@ -60,7 +68,7 @@ const createSeller = async (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-    const { name, email, password, phone, monthly_limit = 2000 } = req.body;
+    const { name, email, password, phone, monthly_limit = 2000, device_id } = req.body;
 
     const t = await sequelize.transaction();
     try {
@@ -70,6 +78,7 @@ const createSeller = async (req, res, next) => {
         password,
         phone,
         role: 'seller',
+        device_id: device_id || null,
       }, { transaction: t });
 
       await SellerBalance.create({
@@ -80,8 +89,12 @@ const createSeller = async (req, res, next) => {
 
       await t.commit();
 
+      const { MikrotikDevice } = require('../models');
       const result = await User.findByPk(seller.id, {
-        include: [{ model: SellerBalance, as: 'balance' }],
+        include: [
+          { model: SellerBalance, as: 'balance' },
+          { model: MikrotikDevice, as: 'device', attributes: ['id', 'name', 'zone'], required: false },
+        ],
       });
 
       logger.info(`Vendedor creado por ${req.user.email}: ${email}`);
@@ -100,8 +113,9 @@ const createSeller = async (req, res, next) => {
  */
 const updateSeller = async (req, res, next) => {
   try {
-    const { name, phone, is_active, monthly_limit } = req.body;
+    const { name, phone, is_active, monthly_limit, device_id } = req.body;
 
+    const { MikrotikDevice } = require('../models');
     const seller = await User.findOne({
       where: { id: req.params.id, role: 'seller' },
       include: [{ model: SellerBalance, as: 'balance' }],
@@ -109,14 +123,21 @@ const updateSeller = async (req, res, next) => {
 
     if (!seller) return res.status(404).json({ error: 'Vendedor no encontrado' });
 
-    await seller.update({ name, phone, is_active });
+    const updateData = { name, phone, is_active };
+    if (device_id !== undefined) updateData.device_id = device_id || null;
+    await seller.update(updateData);
 
     if (monthly_limit !== undefined && seller.balance) {
       await seller.balance.update({ monthly_limit });
     }
 
     logger.info(`Vendedor ${seller.email} actualizado por ${req.user.email}`);
-    return res.json({ message: 'Vendedor actualizado', data: await User.findByPk(seller.id, { include: [{ model: SellerBalance, as: 'balance' }] }) });
+    return res.json({ message: 'Vendedor actualizado', data: await User.findByPk(seller.id, {
+      include: [
+        { model: SellerBalance, as: 'balance' },
+        { model: MikrotikDevice, as: 'device', attributes: ['id', 'name', 'zone'], required: false },
+      ],
+    }) });
   } catch (error) {
     next(error);
   }

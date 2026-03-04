@@ -52,6 +52,7 @@ const login = async (req, res, next) => {
         role: user.role,
         phone: user.phone,
         balance: user.balance,
+        device_id: user.device_id ?? null,
       },
     });
   } catch (error) {

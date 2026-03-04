@@ -48,6 +48,12 @@ const User = sequelize.define('User', {
     type: DataTypes.STRING(500),
     allowNull: true,
   },
+  device_id: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: { model: 'mikrotik_devices', key: 'id' },
+    onDelete: 'SET NULL',
+  },
 }, {
   tableName: 'users',
   indexes: [

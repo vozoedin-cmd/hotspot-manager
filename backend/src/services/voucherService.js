@@ -162,11 +162,13 @@ class VoucherService {
       }
 
       // Buscar ficha disponible (con lock para evitar doble venta)
+      // Si el vendedor tiene un dispositivo asignado, forzar ese dispositivo
       const whereClause = {
         status: 'available',
         package_id: packageId,
       };
-      if (deviceId) whereClause.device_id = deviceId;
+      const effectiveDeviceId = seller.device_id || deviceId;
+      if (effectiveDeviceId) whereClause.device_id = effectiveDeviceId;
 
       const voucher = await Voucher.findOne({
         where: whereClause,

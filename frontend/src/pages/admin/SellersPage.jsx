@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { sellersApi } from '../../services/api';
+import { sellersApi, mikrotikApi } from '../../services/api';
 import { Plus, ChevronRight, DollarSign, ToggleLeft, ToggleRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -9,7 +9,7 @@ export default function SellersPage() {
   const qc = useQueryClient();
   const [modal, setModal] = useState(false);
   const [reloadModal, setReloadModal] = useState(null);
-  const [form, setForm] = useState({ name: '', email: '', password: '', phone: '', monthly_limit: 2000 });
+  const [form, setForm] = useState({ name: '', email: '', password: '', phone: '', monthly_limit: 2000, device_id: '' });
   const [reloadData, setReloadData] = useState({ amount: '', description: '' });
 
   const { data, isLoading } = useQuery({
@@ -17,13 +17,19 @@ export default function SellersPage() {
     queryFn: () => sellersApi.list().then(r => r.data.data),
   });
 
+  const { data: devicesData } = useQuery({
+    queryKey: ['mikrotik-devices'],
+    queryFn: () => mikrotikApi.list().then(r => r.data.data),
+  });
+  const devices = devicesData ?? [];
+
   const createMutation = useMutation({
     mutationFn: () => sellersApi.create(form),
     onSuccess: () => {
       qc.invalidateQueries(['sellers']);
       toast.success('Vendedor creado exitosamente');
       setModal(false);
-      setForm({ name: '', email: '', password: '', phone: '', monthly_limit: 2000 });
+      setForm({ name: '', email: '', password: '', phone: '', monthly_limit: 2000, device_id: '' });
     },
     onError: (e) => toast.error(e.response?.data?.errors?.[0]?.msg || e.response?.data?.error || 'Error'),
   });
@@ -78,7 +84,10 @@ export default function SellersPage() {
                       {seller.is_active ? 'Activo' : 'Inactivo'}
                     </span>
                   </div>
-                  <p className="text-xs text-gray-400 truncate">{seller.email}</p>
+                  <p className="text-xs text-gray-400 truncate">
+                    {seller.email}
+                    {seller.device && <span className="ml-1 font-medium text-blue-500">· {seller.device.name}</span>}
+                  </p>
                 </div>
                 <div className="text-right mr-3">
                   <p className="text-sm font-bold text-gray-800">Q{parseFloat(seller.balance?.balance || 0).toFixed(2)}</p>
@@ -131,6 +140,16 @@ export default function SellersPage() {
                 <div>
                   <label className="label">Límite mensual (Q)</label>
                   <input type="number" className="input" value={form.monthly_limit} onChange={e => setForm({ ...form, monthly_limit: e.target.value })} />
+                </div>
+                <div>
+                  <label className="label">MikroTik asignado <span className="text-gray-400 font-normal">(opcional)</span></label>
+                  <select className="input" value={form.device_id} onChange={e => setForm({ ...form, device_id: e.target.value })}>
+                    <option value="">— Sin restricción (todos los dispositivos) —</option>
+                    {devices.filter(d => d.status === 'online').map(d => (
+                      <option key={d.id} value={d.id}>{d.name} — {d.zone}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-400 mt-1">Si asignas un dispositivo, el vendedor solo podrá vender fichas de ese MikroTik.</p>
                 </div>
               </div>
               <div className="flex gap-3 mt-6">
