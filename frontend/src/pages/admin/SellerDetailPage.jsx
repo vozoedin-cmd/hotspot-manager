@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { sellersApi } from '../../services/api';
-import { ArrowLeft, PlusCircle, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { sellersApi, mikrotikApi } from '../../services/api';
+import { ArrowLeft, PlusCircle, CheckCircle, XCircle, Clock, Pencil } from 'lucide-react';
 import { format } from 'date-fns';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
@@ -19,11 +19,19 @@ export default function SellerDetailPage() {
 
   const [reloadForm, setReloadForm] = useState({ amount: '', description: '' });
   const [showReloadForm, setShowReloadForm] = useState(false);
+  const [editModal, setEditModal] = useState(false);
+  const [editForm, setEditForm] = useState({});
 
   const { data: seller, isLoading } = useQuery({
     queryKey: ['seller', id],
     queryFn: () => sellersApi.get(id).then(r => r.data.data),
   });
+
+  const { data: devicesData } = useQuery({
+    queryKey: ['mikrotik-devices'],
+    queryFn: () => mikrotikApi.list().then(r => r.data.data),
+  });
+  const devices = devicesData ?? [];
 
   const { data: txData } = useQuery({
     queryKey: ['transactions', id],
@@ -45,6 +53,17 @@ export default function SellerDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['transactions', id] });
     },
     onError: (err) => toast.error(err.response?.data?.message ?? 'Error al recargar'),
+  });
+
+  const { mutate: doEdit, isPending: editing } = useMutation({
+    mutationFn: (data) => sellersApi.update(id, data),
+    onSuccess: () => {
+      toast.success('Vendedor actualizado');
+      setEditModal(false);
+      queryClient.invalidateQueries({ queryKey: ['seller', id] });
+      queryClient.invalidateQueries({ queryKey: ['sellers'] });
+    },
+    onError: (err) => toast.error(err.response?.data?.error || 'Error al actualizar'),
   });
 
   const { mutate: doApprove, isPending: approving } = useMutation({
@@ -101,6 +120,22 @@ export default function SellerDetailPage() {
         <span className={`ml-auto text-xs px-2 py-1 rounded-full ${seller.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
           {seller.is_active ? 'Activo' : 'Inactivo'}
         </span>
+        <button
+          onClick={() => {
+            setEditForm({
+              name: seller.name,
+              phone: seller.phone || '',
+              is_active: seller.is_active,
+              monthly_limit: seller.balance?.monthly_limit ?? 2000,
+              device_id: seller.device_id || '',
+            });
+            setEditModal(true);
+          }}
+          className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors"
+          title="Editar vendedor"
+        >
+          <Pencil className="w-4 h-4" />
+        </button>
       </div>
 
       {/* Balance Cards */}
@@ -227,6 +262,61 @@ export default function SellerDetailPage() {
           </div>
         )}
       </div>
+      {/* Edit Modal */}
+      {editModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
+            <div className="p-6">
+              <h2 className="text-lg font-bold text-gray-900 mb-5">Editar Vendedor</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="label">Nombre completo</label>
+                  <input className="input" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} />
+                </div>
+                <div>
+                  <label className="label">Teléfono</label>
+                  <input className="input" value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} />
+                </div>
+                <div>
+                  <label className="label">Límite mensual (Q)</label>
+                  <input type="number" className="input" value={editForm.monthly_limit} onChange={e => setEditForm({ ...editForm, monthly_limit: e.target.value })} />
+                </div>
+                <div>
+                  <label className="label">MikroTik asignado</label>
+                  <select className="input" value={editForm.device_id} onChange={e => setEditForm({ ...editForm, device_id: e.target.value })}>
+                    <option value="">— Sin restricción (todos los dispositivos) —</option>
+                    {devices.filter(d => d.status === 'online').map(d => (
+                      <option key={d.id} value={d.id}>{d.name} — {d.zone}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-400 mt-1">Si asignas un dispositivo, solo podrá vender fichas de ese MikroTik.</p>
+                </div>
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-sm font-medium text-gray-700">Cuenta activa</span>
+                  <button
+                    type="button"
+                    onClick={() => setEditForm({ ...editForm, is_active: !editForm.is_active })}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${editForm.is_active ? 'bg-blue-600' : 'bg-gray-200'}`}
+                  >
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${editForm.is_active ? 'translate-x-6' : 'translate-x-1'}`} />
+                  </button>
+                </div>
+              </div>
+              <div className="flex gap-3 mt-6">
+                <button onClick={() => setEditModal(false)} className="btn-secondary flex-1">Cancelar</button>
+                <button
+                  onClick={() => doEdit(editForm)}
+                  disabled={editing || !editForm.name}
+                  className="btn-primary flex-1"
+                >
+                  {editing ? 'Guardando...' : 'Guardar cambios'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
