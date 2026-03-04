@@ -2,7 +2,7 @@ const { body, validationResult } = require('express-validator');
 const { User, SellerBalance, Transaction, Sale } = require('../models');
 const voucherService = require('../services/voucherService');
 const { sequelize } = require('../config/database');
-const { Op } = require('sequelize');
+const { QueryTypes, Op } = require('sequelize');
 const logger = require('../config/logger');
 
 /**
@@ -88,11 +88,11 @@ const createSeller = async (req, res, next) => {
 
       await t.commit();
 
-      // Asignar device_id con SQL directo (evita conflicto Sequelize belongsTo)
+      // Asignar device_id con SQL nativo
       if (device_id) {
         await sequelize.query(
-          'UPDATE users SET device_id = :deviceId WHERE id = :id',
-          { replacements: { deviceId: device_id, id: seller.id } }
+          'UPDATE users SET device_id = $1 WHERE id = $2',
+          { bind: [device_id, seller.id], type: QueryTypes.UPDATE }
         );
       }
 
@@ -137,11 +137,11 @@ const updateSeller = async (req, res, next) => {
     if (is_active !== undefined) updateData.is_active = is_active;
     await seller.update(updateData);
 
-    // Actualizar device_id con SQL directo (evita conflicto Sequelize belongsTo)
+    // Actualizar device_id con SQL nativo (más confiable que ORM para FK con belongsTo)
     if (device_id !== undefined) {
       await sequelize.query(
-        'UPDATE users SET device_id = :deviceId, updated_at = NOW() WHERE id = :id',
-        { replacements: { deviceId: device_id || null, id: req.params.id } }
+        'UPDATE users SET device_id = $1 WHERE id = $2',
+        { bind: [device_id || null, req.params.id], type: QueryTypes.UPDATE }
       );
     }
 
