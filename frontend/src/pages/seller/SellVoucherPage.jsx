@@ -65,7 +65,11 @@ export default function SellVoucherPage() {
   });
 
   const balance = dashData?.balance ?? null;
-  const packages = pkgsData?.data ?? pkgsData?.packages ?? [];
+  // Filtrar paquetes sin fichas disponibles (available_count filtrado por device del vendedor en el backend)
+  const allPackages = pkgsData?.data ?? pkgsData?.packages ?? [];
+  const packages = allPackages.filter((pkg) =>
+    pkg.available_count === undefined || pkg.available_count > 0
+  );
 
   const { mutate: sellVoucher, isPending } = useMutation({
     mutationFn: (data) => vouchersApi.sell(data),
@@ -213,7 +217,10 @@ export default function SellVoucherPage() {
                 pkg={pkg}
                 selected={selectedPackage?.id === pkg.id}
                 onSelect={setSelectedPackage}
-                canAfford={balance === null || Number(balance) >= Number(pkg.cost)}
+                canAfford={
+                  (balance === null || Number(balance) >= Number(pkg.cost)) &&
+                  (pkg.available_count === undefined || pkg.available_count > 0)
+                }
               />
             ))}
           </div>
