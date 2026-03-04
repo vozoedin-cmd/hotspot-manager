@@ -78,7 +78,6 @@ const createSeller = async (req, res, next) => {
         password,
         phone,
         role: 'seller',
-        device_id: device_id || null,
       }, { transaction: t });
 
       await SellerBalance.create({
@@ -88,6 +87,14 @@ const createSeller = async (req, res, next) => {
       }, { transaction: t });
 
       await t.commit();
+
+      // Asignar device_id con SQL directo (evita conflicto Sequelize belongsTo)
+      if (device_id) {
+        await sequelize.query(
+          'UPDATE users SET device_id = :deviceId WHERE id = :id',
+          { replacements: { deviceId: device_id, id: seller.id } }
+        );
+      }
 
       const { MikrotikDevice } = require('../models');
       const result = await User.findByPk(seller.id, {
@@ -123,9 +130,20 @@ const updateSeller = async (req, res, next) => {
 
     if (!seller) return res.status(404).json({ error: 'Vendedor no encontrado' });
 
-    const updateData = { name, phone, is_active };
-    if (device_id !== undefined) updateData.device_id = device_id || null;
+    // Actualizar campos básicos
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (phone !== undefined) updateData.phone = phone;
+    if (is_active !== undefined) updateData.is_active = is_active;
     await seller.update(updateData);
+
+    // Actualizar device_id con SQL directo (evita conflicto Sequelize belongsTo)
+    if (device_id !== undefined) {
+      await sequelize.query(
+        'UPDATE users SET device_id = :deviceId, updated_at = NOW() WHERE id = :id',
+        { replacements: { deviceId: device_id || null, id: req.params.id } }
+      );
+    }
 
     if (monthly_limit !== undefined && seller.balance) {
       await seller.balance.update({ monthly_limit });

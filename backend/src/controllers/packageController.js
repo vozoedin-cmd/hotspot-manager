@@ -16,12 +16,15 @@ const listPackages = async (req, res, next) => {
       order: [['price', 'ASC']],
     });
 
+    // Si es vendedor con dispositivo asignado, contar solo fichas de ese dispositivo
+    const sellerDeviceId = req.user?.role === 'seller' ? (req.user.device_id || null) : null;
+
     // Agregar conteo de fichas disponibles a cada paquete
     const withCounts = await Promise.all(
       packages.map(async (pkg) => {
-        const available = await Voucher.count({
-          where: { package_id: pkg.id, status: 'available' },
-        });
+        const countWhere = { package_id: pkg.id, status: 'available' };
+        if (sellerDeviceId) countWhere.device_id = sellerDeviceId;
+        const available = await Voucher.count({ where: countWhere });
         const pObj = pkg.toJSON();
         pObj.available_count = available;
         pObj.duration_label = pkg.getDurationLabel();
