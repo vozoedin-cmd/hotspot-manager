@@ -137,12 +137,15 @@ const updateSeller = async (req, res, next) => {
     if (is_active !== undefined) updateData.is_active = is_active;
     await seller.update(updateData);
 
-    // Actualizar device_id con SQL nativo (más confiable que ORM para FK con belongsTo)
+    // Actualizar device_id con SQL nativo
     if (device_id !== undefined) {
-      await sequelize.query(
+      const effectiveDevice = device_id || null;
+      logger.info(`Actualizando device_id: seller=${req.params.id}, device=${effectiveDevice}`);
+      const [, rowCount] = await sequelize.query(
         'UPDATE users SET device_id = $1 WHERE id = $2',
-        { bind: [device_id || null, req.params.id], type: QueryTypes.UPDATE }
+        { bind: [effectiveDevice, req.params.id], type: QueryTypes.UPDATE }
       );
+      logger.info(`device_id update rowCount: ${rowCount}`);
     }
 
     if (monthly_limit !== undefined && seller.balance) {
