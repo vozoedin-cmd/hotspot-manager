@@ -30,3 +30,7 @@ Thumbs.db
 certbot_www/
 certbot_conf/
 postgres_data/
+
+# Backups (generados en el servidor, no subir al repositorio)
+backend/backups/*.sql.gz
+backend/backups/*.sql

@@ -1,0 +1,3 @@
+# Este directorio contiene los backups automáticos de PostgreSQL.
+# Los archivos .sql.gz son ignorados por git (.gitignore).
+# Generados por backupService.js — cron diario 02:00 AM.

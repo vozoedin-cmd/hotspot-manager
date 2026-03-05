@@ -7,6 +7,7 @@ const { Server } = require('socket.io');
 const { sequelize } = require('./config/database');
 const logger = require('./config/logger');
 const syncService = require('./services/syncService');
+const backupService = require('./services/backupService');
 
 const PORT = process.env.PORT || 3000;
 
@@ -48,6 +49,9 @@ async function startServer() {
     // Iniciar sincronización periódica con MikroTik
     syncService.startScheduler(io);
     logger.info('Scheduler de sincronización MikroTik iniciado');
+
+    // Iniciar backups automáticos diarios
+    backupService.start();
 
     server.listen(PORT, () => {
       logger.info(`Servidor iniciado en puerto ${PORT} - Modo: ${process.env.NODE_ENV}`);

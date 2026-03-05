@@ -35,6 +35,7 @@ services:
         condition: service_healthy
     volumes:
       - ./backend/logs:/app/logs
+      - ./backend/backups:/app/backups
     networks:
       - hotspot_net
     expose:
