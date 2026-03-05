@@ -30,8 +30,8 @@ def upload_dir(local, remote):
         else:
             sftp.put(lpath, rpath)
 
-# Clean old dist
-stdin, stdout, stderr = ssh.exec_command('rm -rf ' + remote_dist)
+# Clean old dist (borrar CONTENIDO pero NO el directorio para no romper bind mount nginx)
+stdin, stdout, stderr = ssh.exec_command(f'mkdir -p {remote_dist} && find {remote_dist} -mindepth 1 -delete')
 stdout.channel.recv_exit_status()
 print('Cleaned remote dist')
 

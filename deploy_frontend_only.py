@@ -15,7 +15,8 @@ print('Conectado')
 
 # ── Upload frontend dist ─────────────────────────────────────────────────────
 remote_dist = '/opt/hotspot/frontend/dist'
-ssh.exec_command(f'rm -rf {remote_dist} && mkdir -p {remote_dist}')[1].channel.recv_exit_status()
+# IMPORTANTE: borrar CONTENIDO pero NO el directorio (rm -rf dir rompe el bind mount de nginx)
+ssh.exec_command(f'mkdir -p {remote_dist} && find {remote_dist} -mindepth 1 -delete')[1].channel.recv_exit_status()
 
 def upload_dir(sftp, ssh, local_dir, remote_dir):
     stdin, stdout, stderr = ssh.exec_command(f'mkdir -p {remote_dir}')
