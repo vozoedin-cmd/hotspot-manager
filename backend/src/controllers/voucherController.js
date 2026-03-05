@@ -12,7 +12,7 @@ const listVouchers = async (req, res, next) => {
   try {
     const {
       status, package_id, device_id, seller_id,
-      batch_id, page = 1, limit = 50,
+      batch_id, page = 1, limit = 50, code,
     } = req.query;
 
     const where = {};
@@ -20,6 +20,7 @@ const listVouchers = async (req, res, next) => {
     if (package_id) where.package_id = package_id;
     if (device_id) where.device_id = device_id;
     if (batch_id) where.batch_id = batch_id;
+    if (code) where.code = { [Op.iLike]: `%${code}%` };
 
     // Los vendedores solo ven sus fichas
     if (req.user.role === 'seller') {

@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { sellersApi, mikrotikApi } from '../../services/api';
-import { Plus, ChevronRight, DollarSign, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Plus, ChevronRight, DollarSign, Search, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function SellersPage() {
@@ -11,6 +11,10 @@ export default function SellersPage() {
   const [reloadModal, setReloadModal] = useState(null);
   const [form, setForm] = useState({ name: '', email: '', password: '', phone: '', monthly_limit: 2000, device_id: '' });
   const [reloadData, setReloadData] = useState({ amount: '', description: '' });
+  // Búsqueda y filtros
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all'); // all | active | inactive
+  const [sortBy, setSortBy] = useState('name'); // name | balance
 
   const { data, isLoading } = useQuery({
     queryKey: ['sellers'],
@@ -22,6 +26,24 @@ export default function SellersPage() {
     queryFn: () => mikrotikApi.list().then(r => r.data.data),
   });
   const devices = devicesData ?? [];
+
+  // Filtrado y ordenamiento (cliente)
+  const sellers = useMemo(() => {
+    let list = data ?? [];
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter(s =>
+        s.name.toLowerCase().includes(q) ||
+        s.email.toLowerCase().includes(q) ||
+        (s.phone ?? '').includes(q)
+      );
+    }
+    if (statusFilter === 'active') list = list.filter(s => s.is_active);
+    if (statusFilter === 'inactive') list = list.filter(s => !s.is_active);
+    if (sortBy === 'balance') list = [...list].sort((a, b) => parseFloat(b.balance?.balance ?? 0) - parseFloat(a.balance?.balance ?? 0));
+    else list = [...list].sort((a, b) => a.name.localeCompare(b.name));
+    return list;
+  }, [data, search, statusFilter, sortBy]);
 
   const createMutation = useMutation({
     mutationFn: () => sellersApi.create(form),
@@ -50,12 +72,42 @@ export default function SellersPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Vendedores</h1>
-          <p className="text-sm text-gray-500">Gestiona los vendedores y sus saldos</p>
+          <p className="text-sm text-gray-500">
+            {sellers.length} de {data?.length ?? 0} vendedores
+          </p>
         </div>
         <button onClick={() => setModal(true)} className="btn-primary flex items-center gap-2 text-sm">
           <Plus className="w-4 h-4" />
           Nuevo Vendedor
         </button>
+      </div>
+
+      {/* Barra de búsqueda y filtros */}
+      <div className="flex flex-wrap gap-2">
+        <div className="relative flex-1 min-w-48">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Buscar por nombre, email o teléfono..."
+            className="input pl-9 pr-8 w-full"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          {search && (
+            <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+        <select className="input w-auto" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+          <option value="all">Todos</option>
+          <option value="active">Solo activos</option>
+          <option value="inactive">Solo inactivos</option>
+        </select>
+        <select className="input w-auto" value={sortBy} onChange={e => setSortBy(e.target.value)}>
+          <option value="name">Ordenar por nombre</option>
+          <option value="balance">Ordenar por saldo</option>
+        </select>
       </div>
 
       {/* Sellers List */}
@@ -66,13 +118,13 @@ export default function SellersPage() {
               <div key={i} className="h-16 bg-gray-100 rounded-lg animate-pulse" />
             ))}
           </div>
-        ) : data?.length === 0 ? (
+        ) : sellers.length === 0 ? (
           <div className="p-12 text-center text-gray-400">
-            <p>No hay vendedores registrados</p>
+            <p>{search ? `Sin resultados para "${search}"` : 'No hay vendedores registrados'}</p>
           </div>
         ) : (
           <div className="divide-y divide-gray-50">
-            {data?.map(seller => (
+            {sellers.map(seller => (
               <div key={seller.id} className="flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors">
                 <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold flex-shrink-0">
                   {seller.name.charAt(0).toUpperCase()}

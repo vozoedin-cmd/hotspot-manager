@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { vouchersApi, packagesApi, mikrotikApi } from '../../services/api';
-import { Plus, RefreshCw, Ban, Eye, EyeOff, FileSpreadsheet, FileText } from 'lucide-react';
+import { Plus, RefreshCw, Ban, Eye, EyeOff, FileSpreadsheet, FileText, Search, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { exportToExcel, exportToPDF } from '../../utils/exportUtils';
@@ -36,7 +36,7 @@ function PasswordCell({ password }) {
 
 export default function VouchersPage() {
   const qc = useQueryClient();
-  const [filters, setFilters] = useState({ status: '', package_id: '', device_id: '', page: 1 });
+  const [filters, setFilters] = useState({ status: '', package_id: '', device_id: '', code: '', page: 1 });
 
   const { data, isLoading } = useQuery({
     queryKey: ['vouchers', filters],
@@ -134,6 +134,22 @@ export default function VouchersPage() {
       {/* Filters */}
       <div className="card p-4">
         <div className="flex flex-wrap gap-3">
+          {/* Búsqueda por código */}
+          <div className="relative flex-1 min-w-48">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Buscar por código de ficha..."
+              className="input pl-9 pr-8 w-full"
+              value={filters.code}
+              onChange={(e) => setFilters({ ...filters, code: e.target.value, page: 1 })}
+            />
+            {filters.code && (
+              <button onClick={() => setFilters({ ...filters, code: '', page: 1 })} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
           <select
             className="input w-auto"
             value={filters.status}
@@ -164,7 +180,7 @@ export default function VouchersPage() {
           </select>
 
           <button
-            onClick={() => setFilters({ status: '', package_id: '', device_id: '', page: 1 })}
+            onClick={() => setFilters({ status: '', package_id: '', device_id: '', code: '', page: 1 })}
             className="btn-secondary text-sm flex items-center gap-1"
           >
             <RefreshCw className="w-3.5 h-3.5" />
