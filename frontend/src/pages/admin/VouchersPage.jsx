@@ -77,7 +77,7 @@ export default function VouchersPage() {
       Router: v.device?.name ?? '',
       Vendedor: v.seller?.name ?? '',
       Estado: STATUS_LABELS[v.status]?.label ?? v.status,
-      Creado: format(new Date(v.created_at), 'dd/MM/yyyy HH:mm'),
+      Creado: v.created_at ? format(new Date(v.created_at), 'dd/MM/yyyy HH:mm') : '-',
     }));
     exportToExcel(rows, Object.keys(rows[0] ?? {}), 'fichas_hotspot', 'Fichas');
   };
@@ -93,7 +93,7 @@ export default function VouchersPage() {
         v.device?.name ?? '—',
         v.seller?.name ?? '—',
         STATUS_LABELS[v.status]?.label ?? v.status,
-        format(new Date(v.created_at), 'dd/MM/yy'),
+        v.created_at ? format(new Date(v.created_at), 'dd/MM/yy') : '-',
       ]),
       summary: [
         { label: 'Total fichas', value: pagination.total ?? vouchers.length },
