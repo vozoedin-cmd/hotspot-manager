@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { sellersApi, mikrotikApi } from '../../services/api';
 import { Plus, ChevronRight, DollarSign, Search, X } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { SellerCardSkeleton, QueryError } from '../../components/Skeleton';
 
 export default function SellersPage() {
   const qc = useQueryClient();
@@ -16,7 +17,7 @@ export default function SellersPage() {
   const [statusFilter, setStatusFilter] = useState('all'); // all | active | inactive
   const [sortBy, setSortBy] = useState('name'); // name | balance
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['sellers'],
     queryFn: () => sellersApi.list().then(r => r.data.data),
   });
@@ -66,6 +67,13 @@ export default function SellersPage() {
     },
     onError: (e) => toast.error(e.response?.data?.error || 'Error al recargar'),
   });
+
+  if (isLoading) return (
+    <div className="space-y-3 max-w-4xl">
+      {Array.from({ length: 5 }).map((_, i) => <SellerCardSkeleton key={i} />)}
+    </div>
+  );
+  if (isError) return <QueryError onRetry={refetch} />;
 
   return (
     <div className="space-y-5 max-w-4xl">

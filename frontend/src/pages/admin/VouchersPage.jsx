@@ -6,6 +6,7 @@ import { Plus, RefreshCw, Ban, Eye, EyeOff, FileSpreadsheet, FileText, Search, X
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { exportToExcel, exportToPDF } from '../../utils/exportUtils';
+import { TableSkeleton, QueryError } from '../../components/Skeleton';
 
 const STATUS_LABELS = {
   available: { label: 'Disponible', cls: 'badge-available' },
@@ -38,7 +39,7 @@ export default function VouchersPage() {
   const qc = useQueryClient();
   const [filters, setFilters] = useState({ status: '', package_id: '', device_id: '', code: '', page: 1 });
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['vouchers', filters],
     queryFn: () => vouchersApi.list(filters).then(r => r.data),
   });
@@ -64,6 +65,9 @@ export default function VouchersPage() {
 
   const vouchers = data?.data || [];
   const pagination = data?.pagination || {};
+
+  if (isLoading) return <TableSkeleton rows={6} cols={7} />;
+  if (isError) return <QueryError onRetry={refetch} />;
 
   const handleExcelExport = () => {
     const rows = vouchers.map((v) => ({

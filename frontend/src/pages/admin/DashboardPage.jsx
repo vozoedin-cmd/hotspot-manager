@@ -7,6 +7,7 @@ import {
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import toast from 'react-hot-toast';
+import { DashboardSkeleton, QueryError } from '../../components/Skeleton';
 
 const StatCard = ({ title, value, subtitle, icon: Icon, color = 'blue', loading }) => {
   const colors = {
@@ -52,7 +53,7 @@ const DeviceStatusBadge = ({ status }) => {
 };
 
 export default function DashboardPage() {
-  const { data, isLoading, refetch, isFetching } = useQuery({
+  const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ['dashboard'],
     queryFn: () => reportsApi.dashboard().then(r => r.data.data),
     refetchInterval: 60000,
@@ -62,6 +63,9 @@ export default function DashboardPage() {
     await refetch();
     toast.success('Datos actualizados');
   };
+
+  if (isLoading) return <DashboardSkeleton />;
+  if (isError) return <QueryError onRetry={refetch} />;
 
   const vouchers = data?.vouchers || {};
   const revenue = data?.revenue || {};
