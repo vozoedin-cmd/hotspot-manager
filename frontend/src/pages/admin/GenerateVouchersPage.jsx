@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { vouchersApi, packagesApi, mikrotikApi } from '../../services/api';
@@ -84,7 +84,7 @@ export default function GenerateVouchersPage() {
             <option value="">Seleccionar router...</option>
             {devices?.map(d => (
               <option key={d.id} value={d.id} disabled={d.status !== 'online'}>
-                {d.name} {d.status !== 'online' ? `(${d.status})` : 'âœ“'}
+                {d.name} {d.status !== 'online' ? `(${d.status})` : '✓'}
               </option>
             ))}
           </select>
@@ -97,7 +97,7 @@ export default function GenerateVouchersPage() {
           )}
         </div>
 
-        {/* Package â€” solo si hay dispositivo seleccionado */}
+        {/* Package — solo si hay dispositivo seleccionado */}
         <div>
           <label className="label">Paquete *</label>
           <select
@@ -111,7 +111,7 @@ export default function GenerateVouchersPage() {
             </option>
             {packages?.map(p => (
               <option key={p.id} value={p.id}>
-                {p.name} â€” Q{p.price}
+                {p.name} — Q{p.price}
               </option>
             ))}
           </select>
@@ -126,7 +126,7 @@ export default function GenerateVouchersPage() {
             <div className="mt-2 p-3 bg-blue-50 rounded-lg text-sm text-blue-700 flex items-start gap-2">
               <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
               <div>
-                <strong>{selectedPkg.name}</strong> â€”{' '}
+                <strong>{selectedPkg.name}</strong> —{' '}
                 {selectedPkg.duration_value} {selectedPkg.duration_unit} |{' '}
                 Precio: Q{selectedPkg.price} | Costo vendedor: Q{selectedPkg.cost}
                 {selectedPkg.mikrotik_profile && (
@@ -139,7 +139,7 @@ export default function GenerateVouchersPage() {
 
         {/* Quantity */}
         <div>
-          <label className="label">Cantidad de fichas (mÃ¡x. 500)</label>
+          <label className="label">Cantidad de fichas (máx. 500)</label>
           <input
             type="number"
             className="input"
@@ -148,7 +148,7 @@ export default function GenerateVouchersPage() {
             value={form.quantity}
             onChange={e => setForm({ ...form, quantity: parseInt(e.target.value) || 1 })}
           />
-          <p className="text-xs text-gray-400 mt-1">Se crearÃ¡n en MikroTik y en la base de datos</p>
+          <p className="text-xs text-gray-400 mt-1">Se crearán en MikroTik y en la base de datos</p>
         </div>
 
         {/* Voucher type */}
@@ -156,8 +156,8 @@ export default function GenerateVouchersPage() {
           <label className="label">Tipo de ficha</label>
           <div className="grid grid-cols-2 gap-3">
             {[
-              { value: 'pin', label: 'Solo PIN', desc: 'Un Ãºnico cÃ³digo numÃ©rico para entrar' },
-              { value: 'user_password', label: 'Usuario + ContraseÃ±a', desc: 'CÃ³digo y contraseÃ±a separados' },
+              { value: 'pin', label: 'Solo PIN', desc: 'Un único código numérico para entrar' },
+              { value: 'user_password', label: 'Usuario + Contraseña', desc: 'Código y contraseña separados' },
             ].map(opt => (
               <button
                 key={opt.value}
@@ -176,10 +176,10 @@ export default function GenerateVouchersPage() {
           </div>
         </div>
 
-        {/* DÃ­gitos */}
+        {/* Dígitos */}
         {form.voucher_type === 'pin' ? (
           <div className="max-w-xs">
-            <label className="label">DÃ­gitos del PIN</label>
+            <label className="label">Dígitos del PIN</label>
             <input
               type="number"
               className="input"
@@ -188,12 +188,12 @@ export default function GenerateVouchersPage() {
               value={form.code_length}
               onChange={e => setForm({ ...form, code_length: parseInt(e.target.value) || 6 })}
             />
-            <p className="text-xs text-gray-400 mt-1">Solo nÃºmeros (4â€“12 dÃ­gitos)</p>
+            <p className="text-xs text-gray-400 mt-1">Solo números (4–12 dígitos)</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="label">DÃ­gitos del cÃ³digo</label>
+              <label className="label">Dígitos del código</label>
               <input
                 type="number"
                 className="input"
@@ -202,10 +202,10 @@ export default function GenerateVouchersPage() {
                 value={form.code_length}
                 onChange={e => setForm({ ...form, code_length: parseInt(e.target.value) || 6 })}
               />
-              <p className="text-xs text-gray-400 mt-1">Parte aleatoria (4â€“12)</p>
+              <p className="text-xs text-gray-400 mt-1">Parte aleatoria (4–12)</p>
             </div>
             <div>
-              <label className="label">DÃ­gitos de contraseÃ±a</label>
+              <label className="label">Dígitos de contraseña</label>
               <input
                 type="number"
                 className="input"
@@ -214,17 +214,17 @@ export default function GenerateVouchersPage() {
                 value={form.pwd_length}
                 onChange={e => setForm({ ...form, pwd_length: parseInt(e.target.value) || 6 })}
               />
-              <p className="text-xs text-gray-400 mt-1">Solo letras/nÃºmeros (4â€“12)</p>
+              <p className="text-xs text-gray-400 mt-1">Solo letras/números (4–12)</p>
             </div>
           </div>
         )}
 
-        {/* Numbers only â€” solo para usuario+contraseÃ±a */}
+        {/* Numbers only — solo para usuario+contraseña */}
         {form.voucher_type === 'user_password' && (
           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
             <div>
-              <p className="text-sm font-medium text-gray-700">Solo nÃºmeros</p>
-              <p className="text-xs text-gray-400">Genera cÃ³digos Ãºnicamente con dÃ­gitos (2â€“9)</p>
+              <p className="text-sm font-medium text-gray-700">Solo números</p>
+              <p className="text-xs text-gray-400">Genera códigos únicamente con dígitos (2–9)</p>
             </div>
             <button
               type="button"
@@ -244,11 +244,11 @@ export default function GenerateVouchersPage() {
         {form.device_id && form.package_id && form.quantity > 0 && (
           <div className="bg-gray-50 rounded-lg p-4 text-sm space-y-1">
             <p className="font-semibold text-gray-700 mb-2">Resumen:</p>
-            <p className="text-gray-600">â€¢ <strong>{form.quantity}</strong> fichas en router <strong>{selectedDevice?.name}</strong></p>
-            <p className="text-gray-600">â€¢ Paquete: <strong>{selectedPkg?.name}</strong></p>
-            <p className="text-gray-600">â€¢ Tipo: <strong>{form.voucher_type === 'pin' ? 'Solo PIN' : 'Usuario + ContraseÃ±a'}</strong></p>
-            <p className="text-gray-600">â€¢ Formato PIN: <strong>{form.code_length} dÃ­gitos</strong>{form.voucher_type === 'pin' ? ' numÃ©ricos' : ''}</p>
-            <p className="text-gray-600">â€¢ Valor total de venta: <strong>Q{(form.quantity * (selectedPkg?.price || 0)).toFixed(2)}</strong></p>
+            <p className="text-gray-600">• <strong>{form.quantity}</strong> fichas en router <strong>{selectedDevice?.name}</strong></p>
+            <p className="text-gray-600">• Paquete: <strong>{selectedPkg?.name}</strong></p>
+            <p className="text-gray-600">• Tipo: <strong>{form.voucher_type === 'pin' ? 'Solo PIN' : 'Usuario + Contraseña'}</strong></p>
+            <p className="text-gray-600">• Formato PIN: <strong>{form.code_length} dígitos</strong>{form.voucher_type === 'pin' ? ' numéricos' : ''}</p>
+            <p className="text-gray-600">• Valor total de venta: <strong>Q{(form.quantity * (selectedPkg?.price || 0)).toFixed(2)}</strong></p>
           </div>
         )}
 
