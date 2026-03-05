@@ -2,6 +2,8 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, ShoppingCart, History, User, LogOut, Wifi } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import toast from 'react-hot-toast';
+import useSocket from '../hooks/useSocket';
+import NotificationBell from '../components/NotificationBell';
 
 const navItems = [
   { to: '/seller', icon: LayoutDashboard, label: 'Inicio', exact: true },
@@ -13,6 +15,7 @@ const navItems = [
 export default function SellerLayout() {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
+  useSocket(user);
 
   const handleLogout = async () => {
     await logout();
@@ -28,11 +31,12 @@ export default function SellerLayout() {
           <Wifi className="w-5 h-5" />
           <span className="font-bold text-sm">HotspotManager</span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <div className="text-right">
             <p className="text-xs font-semibold">{user?.name}</p>
             <p className="text-xs text-blue-200">Vendedor</p>
           </div>
+          <NotificationBell />
           <button
             onClick={handleLogout}
             className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"

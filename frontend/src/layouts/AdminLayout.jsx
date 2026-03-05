@@ -8,6 +8,8 @@ import {
 import useAuthStore from '../store/authStore';
 import { sellersApi } from '../services/api';
 import toast from 'react-hot-toast';
+import useSocket from '../hooks/useSocket';
+import NotificationBell from '../components/NotificationBell';
 
 const navItems = [
   { to: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
@@ -24,6 +26,7 @@ export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
+  useSocket(user);
 
   const { data: countData } = useQuery({
     queryKey: ['balance-requests-count'],
@@ -84,10 +87,11 @@ export default function AdminLayout() {
           <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
             {user?.name?.charAt(0).toUpperCase()}
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="text-white text-sm font-medium truncate">{user?.name}</p>
             <p className="text-blue-200 text-xs truncate">{user?.email}</p>
           </div>
+          <NotificationBell />
         </div>
         <button
           onClick={handleLogout}
@@ -126,14 +130,15 @@ export default function AdminLayout() {
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Mobile header */}
-        <header className="lg:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3">
+        <header className="lg:hidden bg-blue-800 border-b border-blue-700 px-4 py-3 flex items-center gap-3">
           <button onClick={() => setSidebarOpen(true)}>
-            <Menu className="w-6 h-6 text-gray-600" />
+            <Menu className="w-6 h-6 text-white" />
           </button>
-          <div className="flex items-center gap-2">
-            <Wifi className="w-5 h-5 text-blue-600" />
-            <span className="font-semibold text-gray-900">HotspotManager</span>
+          <div className="flex items-center gap-2 flex-1">
+            <Wifi className="w-5 h-5 text-white" />
+            <span className="font-semibold text-white">HotspotManager</span>
           </div>
+          <NotificationBell />
         </header>
 
         {/* Content */}
