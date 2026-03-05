@@ -314,7 +314,7 @@ class MikrotikService {
   /**
    * Generar lote de códigos únicos
    */
-  static generateVoucherBatch(count = 10, prefix = 'HS', length = 8, numbersOnly = false) {
+  static generateVoucherBatch(count = 10, prefix = '', length = 8, numbersOnly = false) {
     const codes = new Set();
     while (codes.size < count) {
       codes.add(MikrotikService.generateVoucherCode(prefix, length, numbersOnly));

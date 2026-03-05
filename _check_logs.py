@@ -5,9 +5,13 @@ ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 ssh.connect('167.99.58.189', username='root', password='1998humber-C1d', timeout=30)
 sftp = ssh.open_sftp()
 
-# 1. Subir voucherService.js al backend en VPS
+# 1. Subir archivos backend modificados
 sftp.put(os.path.join(BASE, r'backend\src\services\voucherService.js'), '/opt/hotspot/backend/src/services/voucherService.js')
 print('voucherService.js subido')
+sftp.put(os.path.join(BASE, r'backend\src\services\mikrotikService.js'), '/opt/hotspot/backend/src/services/mikrotikService.js')
+print('mikrotikService.js subido')
+sftp.put(os.path.join(BASE, r'backend\src\controllers\voucherController.js'), '/opt/hotspot/backend/src/controllers/voucherController.js')
+print('voucherController.js subido')
 
 # 2. Subir frontend dist
 remote_dist = '/opt/hotspot/frontend/dist'

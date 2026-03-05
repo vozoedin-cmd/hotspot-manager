@@ -98,7 +98,7 @@ const generateVouchers = async (req, res, next) => {
       deviceId: device_id,
       packageId: package_id,
       quantity: Math.min(quantity, 500),
-      prefix: prefix || 'HS',
+      prefix: prefix ?? '',
       voucherType: voucher_type || 'user_password',
       codeLength: parseInt(code_length) || 6,
       pwdLength: parseInt(pwd_length) || 6,

@@ -13,7 +13,7 @@ class VoucherService {
   /**
    * Generar un lote de fichas y crearlas en MikroTik + BD
    */
-  async generateBatch({ deviceId, packageId, quantity = 10, prefix = 'HS', voucherType = 'user_password', codeLength = 6, pwdLength = 6, numbersOnly = false, createdBy }) {
+  async generateBatch({ deviceId, packageId, quantity = 10, prefix = '', voucherType = 'user_password', codeLength = 6, pwdLength = 6, numbersOnly = false, createdBy }) {
     const device = await MikrotikDevice.findByPk(deviceId);
     if (!device) throw new Error('Dispositivo MikroTik no encontrado');
 
