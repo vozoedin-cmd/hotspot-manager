@@ -92,6 +92,7 @@ export const sellersApi = {
   update: (id, data) => api.put(`/sellers/${id}`, data),
   reloadBalance: (id, data) => api.post(`/sellers/${id}/reload-balance`, data),
   transactions: (id, params) => api.get(`/sellers/${id}/transactions`, { params }),
+  myTransactions: (params) => api.get('/sellers/me/transactions', { params }),
   // Balance Requests
   requestBalance: (data) => api.post('/sellers/balance-request', data),
   getMyBalanceRequests: () => api.get('/sellers/my-balance-requests'),

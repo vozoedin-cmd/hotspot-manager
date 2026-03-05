@@ -4,7 +4,8 @@ import { reportsApi, authApi, sellersApi } from '../../services/api';
 import useAuthStore from '../../store/authStore';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
-import { User, Lock, ArrowUpRight, ArrowDownLeft, PlusCircle, X, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { User, Lock, ArrowUpRight, ArrowDownLeft, PlusCircle, X, ChevronLeft, ChevronRight, FileSpreadsheet } from 'lucide-react';
+import { exportToExcel } from '../../utils/exportUtils';
 
 export default function SellerProfilePage() {
   const { user, updateUser } = useAuthStore();
@@ -13,6 +14,10 @@ export default function SellerProfilePage() {
   const [passwords, setPasswords] = useState({ current: '', newPass: '', confirm: '' });
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [requestForm, setRequestForm] = useState({ amount: '', notes: '' });
+  // Historial de transacciones
+  const [txPage, setTxPage] = useState(1);
+  const [txFilter, setTxFilter] = useState('');
+  const TX_LIMIT = 15;
 
   const { data: dash } = useQuery({
     queryKey: ['seller-dashboard'],
@@ -24,6 +29,28 @@ export default function SellerProfilePage() {
     queryKey: ['my-balance-requests'],
     queryFn: () => sellersApi.getMyBalanceRequests().then(r => r.data),
   });
+
+  // Historial completo de transacciones con paginación
+  const { data: txData, isLoading: txLoading } = useQuery({
+    queryKey: ['my-transactions', txPage, txFilter],
+    queryFn: () => sellersApi.myTransactions({ page: txPage, limit: TX_LIMIT, type: txFilter || undefined }).then(r => r.data),
+    keepPreviousData: true,
+    enabled: tab === 'history',
+  });
+  const allTx = txData?.data ?? [];
+  const txTotal = txData?.pagination?.total ?? 0;
+  const txPages = Math.ceil(txTotal / TX_LIMIT);
+
+  const handleTxExport = () => {
+    const rows = allTx.map(tx => ({
+      Fecha: format(new Date(tx.created_at || tx.createdAt), 'dd/MM/yyyy HH:mm'),
+      Tipo: tx.type === 'debit' ? 'Débito' : 'Crédito',
+      Descripción: tx.description ?? tx.type,
+      'Monto (Q)': (tx.type === 'debit' ? '-' : '+') + Number(tx.amount).toFixed(2),
+      'Saldo Tras Movimiento': tx.balance_after !== undefined ? `Q${Number(tx.balance_after).toFixed(2)}` : '',
+    }));
+    exportToExcel(rows, Object.keys(rows[0] ?? {}), 'historial_saldo', 'Transacciones');
+  };
 
   const { mutate: changePassword, isPending } = useMutation({
     mutationFn: (data) => authApi.changePassword(data),
@@ -90,7 +117,11 @@ export default function SellerProfilePage() {
 
       {/* Tabs */}
       <div className="flex rounded-xl bg-gray-100 p-1 gap-1">
-        {[{ id: 'profile', label: 'Perfil', icon: User }, { id: 'security', label: 'Seguridad', icon: Lock }].map(
+        {[
+          { id: 'profile', label: 'Perfil', icon: User },
+          { id: 'history', label: 'Historial', icon: ArrowDownLeft },
+          { id: 'security', label: 'Seguridad', icon: Lock },
+        ].map(
           (t) => (
             <button
               key={t.id}
@@ -183,6 +214,100 @@ export default function SellerProfilePage() {
               </ul>
             )}
           </div>
+        </div>
+      ) : tab === 'history' ? (
+        /* ── Historial de saldo ───────────────────────────────────────────── */
+        <div className="space-y-3">
+          {/* Filtros + Export */}
+          <div className="flex items-center gap-2">
+            <select
+              className="flex-1 input-field text-sm"
+              value={txFilter}
+              onChange={(e) => { setTxFilter(e.target.value); setTxPage(1); }}
+            >
+              <option value="">Todos los movimientos</option>
+              <option value="credit">Solo recargas (+)</option>
+              <option value="debit">Solo débitos (-)</option>
+            </select>
+            <button
+              onClick={handleTxExport}
+              disabled={allTx.length === 0}
+              className="flex items-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-40 text-white text-xs font-medium rounded-lg transition-colors"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              Excel
+            </button>
+          </div>
+
+          {/* Resumen rápido */}
+          {txTotal > 0 && (
+            <p className="text-xs text-gray-400 text-right">{txTotal} movimientos en total</p>
+          )}
+
+          {/* Lista */}
+          <div className="card p-0 overflow-hidden">
+            {txLoading ? (
+              <ul className="divide-y divide-gray-50">
+                {Array(5).fill(null).map((_, i) => (
+                  <li key={i} className="px-4 py-3 flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gray-100 rounded-full animate-pulse" />
+                    <div className="flex-1 space-y-1.5">
+                      <div className="h-3 bg-gray-100 rounded animate-pulse w-3/4" />
+                      <div className="h-2.5 bg-gray-100 rounded animate-pulse w-1/2" />
+                    </div>
+                    <div className="h-4 bg-gray-100 rounded animate-pulse w-14" />
+                  </li>
+                ))}
+              </ul>
+            ) : allTx.length === 0 ? (
+              <p className="text-center text-gray-400 text-sm py-12">Sin movimientos registrados</p>
+            ) : (
+              <ul className="divide-y divide-gray-50">
+                {allTx.map((tx) => (
+                  <li key={tx.id} className="px-4 py-3 flex items-center gap-3">
+                    <div className={`p-2 rounded-full ${tx.type === 'debit' ? 'bg-red-50' : 'bg-green-50'}`}>
+                      {tx.type === 'debit'
+                        ? <ArrowUpRight className="w-4 h-4 text-red-400" />
+                        : <ArrowDownLeft className="w-4 h-4 text-green-500" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-gray-800 font-medium truncate">{tx.description ?? tx.type}</p>
+                      <p className="text-xs text-gray-400">{format(new Date(tx.created_at || tx.createdAt), 'dd/MM/yyyy HH:mm')}</p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <span className={`font-bold text-sm ${tx.type === 'debit' ? 'text-red-500' : 'text-green-600'}`}>
+                        {tx.type === 'debit' ? '-' : '+'}Q{Number(tx.amount).toFixed(2)}
+                      </span>
+                      {tx.balance_after !== undefined && (
+                        <p className="text-xs text-gray-400">Saldo: Q{Number(tx.balance_after).toFixed(2)}</p>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* Paginación */}
+          {txPages > 1 && (
+            <div className="flex items-center justify-center gap-3 text-sm">
+              <button
+                onClick={() => setTxPage((p) => Math.max(1, p - 1))}
+                disabled={txPage === 1}
+                className="p-2 rounded-lg border border-gray-200 disabled:opacity-40"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="text-gray-600 text-xs">Pág. {txPage} de {txPages}</span>
+              <button
+                onClick={() => setTxPage((p) => Math.min(txPages, p + 1))}
+                disabled={txPage === txPages}
+                className="p-2 rounded-lg border border-gray-200 disabled:opacity-40"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         <form onSubmit={handleChangePassword} className="card p-5 space-y-4">
