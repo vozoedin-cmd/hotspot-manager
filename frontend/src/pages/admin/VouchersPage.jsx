@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { vouchersApi, packagesApi, mikrotikApi } from '../../services/api';
-import { Plus, RefreshCw, Ban, Eye, EyeOff } from 'lucide-react';
+import { Plus, RefreshCw, Ban, Eye, EyeOff, FileSpreadsheet, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
+import { exportToExcel, exportToPDF } from '../../utils/exportUtils';
 
 const STATUS_LABELS = {
   available: { label: 'Disponible', cls: 'badge-available' },
@@ -64,6 +65,39 @@ export default function VouchersPage() {
   const vouchers = data?.data || [];
   const pagination = data?.pagination || {};
 
+  const handleExcelExport = () => {
+    const rows = vouchers.map((v) => ({
+      Código: v.code,
+      Contraseña: v.password ?? '',
+      Paquete: v.package?.name ?? '',
+      Router: v.device?.name ?? '',
+      Vendedor: v.seller?.name ?? '',
+      Estado: STATUS_LABELS[v.status]?.label ?? v.status,
+      Creado: format(new Date(v.created_at), 'dd/MM/yyyy HH:mm'),
+    }));
+    exportToExcel(rows, Object.keys(rows[0] ?? {}), 'fichas_hotspot', 'Fichas');
+  };
+
+  const handlePDFExport = () => {
+    exportToPDF({
+      title: 'Fichas Hotspot',
+      subtitle: filters.status ? `Estado: ${STATUS_LABELS[filters.status]?.label}` : 'Todos los estados',
+      columns: ['Código', 'Paquete', 'Router', 'Vendedor', 'Estado', 'Creado'],
+      data: vouchers.map((v) => [
+        v.code,
+        v.package?.name ?? '—',
+        v.device?.name ?? '—',
+        v.seller?.name ?? '—',
+        STATUS_LABELS[v.status]?.label ?? v.status,
+        format(new Date(v.created_at), 'dd/MM/yy'),
+      ]),
+      summary: [
+        { label: 'Total fichas', value: pagination.total ?? vouchers.length },
+        { label: 'Página', value: `${pagination.page ?? 1} / ${pagination.pages ?? 1}` },
+      ],
+    });
+  };
+
   return (
     <div className="space-y-4 max-w-7xl">
       <div className="flex items-center justify-between">
@@ -71,10 +105,30 @@ export default function VouchersPage() {
           <h1 className="text-2xl font-bold text-gray-900">Fichas Hotspot</h1>
           <p className="text-sm text-gray-500">Gestiona todas las fichas del sistema</p>
         </div>
-        <Link to="/admin/vouchers/generate" className="btn-primary flex items-center gap-2 text-sm">
-          <Plus className="w-4 h-4" />
-          Generar Fichas
-        </Link>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExcelExport}
+            disabled={vouchers.length === 0}
+            className="flex items-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-40 text-white text-sm font-medium rounded-lg transition-colors"
+            title="Exportar a Excel"
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            Excel
+          </button>
+          <button
+            onClick={handlePDFExport}
+            disabled={vouchers.length === 0}
+            className="flex items-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-40 text-white text-sm font-medium rounded-lg transition-colors"
+            title="Exportar a PDF"
+          >
+            <FileText className="w-4 h-4" />
+            PDF
+          </button>
+          <Link to="/admin/vouchers/generate" className="btn-primary flex items-center gap-2 text-sm">
+            <Plus className="w-4 h-4" />
+            Generar Fichas
+          </Link>
+        </div>
       </div>
 
       {/* Filters */}

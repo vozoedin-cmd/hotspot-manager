@@ -3,6 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { reportsApi } from '../../services/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { FileSpreadsheet, FileText } from 'lucide-react';
+import { exportToExcel, exportToPDF } from '../../utils/exportUtils';
 
 const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
 
@@ -30,6 +32,41 @@ export default function ReportsPage() {
   const totals = salesReport?.totals || {};
   const sales = salesReport?.data || [];
 
+  const handleExcelExport = () => {
+    const rows = sales.map((s) => ({
+      Fecha: format(new Date(s.created_at), 'dd/MM/yyyy HH:mm'),
+      Ficha: s.voucher?.code ?? '',
+      Paquete: s.package?.name ?? '',
+      Vendedor: s.seller?.name ?? '',
+      'Venta (Q)': parseFloat(s.amount ?? 0).toFixed(2),
+      'Costo (Q)': parseFloat(s.cost ?? 0).toFixed(2),
+      'Ganancia (Q)': parseFloat(s.profit ?? 0).toFixed(2),
+    }));
+    exportToExcel(rows, Object.keys(rows[0] ?? {}), 'reporte_ventas', 'Ventas');
+  };
+
+  const handlePDFExport = () => {
+    exportToPDF({
+      title: 'Reporte de Ventas',
+      subtitle: `${dateRange.from} al ${dateRange.to}`,
+      columns: ['Fecha', 'Ficha', 'Paquete', 'Vendedor', 'Venta', 'Ganancia'],
+      data: sales.map((s) => [
+        format(new Date(s.created_at), 'dd/MM/yy HH:mm'),
+        s.voucher?.code ?? '—',
+        s.package?.name ?? '—',
+        s.seller?.name ?? '—',
+        `Q${parseFloat(s.amount ?? 0).toFixed(2)}`,
+        `Q${parseFloat(s.profit ?? 0).toFixed(2)}`,
+      ]),
+      summary: [
+        { label: 'Total Ventas', value: totals.count ?? 0 },
+        { label: 'Ingresos', value: `Q${parseFloat(totals.amount ?? 0).toFixed(2)}` },
+        { label: 'Costo', value: `Q${parseFloat(totals.cost ?? 0).toFixed(2)}` },
+        { label: 'Ganancia Neta', value: `Q${parseFloat(totals.profit ?? 0).toFixed(2)}` },
+      ],
+    });
+  };
+
   return (
     <div className="space-y-6 max-w-7xl">
       <div className="flex items-start justify-between flex-wrap gap-3">
@@ -46,6 +83,24 @@ export default function ReportsPage() {
             <label className="label text-xs">Hasta</label>
             <input type="date" className="input text-sm" value={dateRange.to} onChange={e => setDateRange(d => ({ ...d, to: e.target.value }))} />
           </div>
+          <button
+            onClick={handleExcelExport}
+            disabled={sales.length === 0}
+            className="flex items-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-40 text-white text-sm font-medium rounded-lg transition-colors"
+            title="Exportar a Excel"
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            Excel
+          </button>
+          <button
+            onClick={handlePDFExport}
+            disabled={sales.length === 0}
+            className="flex items-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-40 text-white text-sm font-medium rounded-lg transition-colors"
+            title="Exportar a PDF"
+          >
+            <FileText className="w-4 h-4" />
+            PDF
+          </button>
         </div>
       </div>
 

@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { salesApi } from '../../services/api';
 import { format } from 'date-fns';
-import { ChevronLeft, ChevronRight, Receipt } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Receipt, FileSpreadsheet } from 'lucide-react';
+import { exportToExcel } from '../../utils/exportUtils';
 
 const statusLabels = {
   available: 'Disponible',
@@ -37,6 +38,18 @@ export default function SalesHistoryPage() {
   const totalPages = Math.ceil(total / LIMIT);
   const totalRevenue = sales.reduce((s, x) => s + Number(x.amount || 0), 0);
 
+  const handleExport = () => {
+    const rows = sales.map((s) => ({
+      Fecha: format(new Date(s.created_at || s.createdAt), 'dd/MM/yyyy HH:mm'),
+      Cliente: s.client_name || 'Sin nombre',
+      Paquete: s.package?.name ?? s.voucher?.package?.name ?? '—',
+      Ficha: s.voucher?.code ?? '—',
+      'Monto (Q)': Number(s.amount).toFixed(2),
+      Estado: s.voucher?.status ?? '—',
+    }));
+    exportToExcel(rows, Object.keys(rows[0] ?? {}), 'mis_ventas', 'Ventas');
+  };
+
   return (
     <div className="space-y-4 pb-6">
       <div className="flex items-start justify-between">
@@ -44,9 +57,21 @@ export default function SalesHistoryPage() {
           <h1 className="text-xl font-bold text-gray-900">Mis Ventas</h1>
           <p className="text-sm text-gray-500">{total} ventas en total</p>
         </div>
-        <div className="text-right">
-          <p className="text-xs text-gray-400">Esta página</p>
-          <p className="text-sm font-bold text-green-600">Q{totalRevenue.toFixed(2)}</p>
+        <div className="flex items-center gap-2">
+          <div className="text-right">
+            <p className="text-xs text-gray-400">Esta página</p>
+            <p className="text-sm font-bold text-green-600">Q{totalRevenue.toFixed(2)}</p>
+          </div>
+          {sales.length > 0 && (
+            <button
+              onClick={handleExport}
+              className="flex items-center gap-1 px-2.5 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-lg transition-colors"
+              title="Exportar a Excel"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              Excel
+            </button>
+          )}
         </div>
       </div>
 
