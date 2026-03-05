@@ -23,8 +23,17 @@ const useAuthStore = create((set, get) => ({
     }
   },
 
-  login: async (email, password) => {
-    const res = await authApi.login({ email, password });
+  login: async (email, password, totpCode = null) => {
+    const payload = { email, password };
+    if (totpCode) payload.totp_code = totpCode;
+
+    const res = await authApi.login(payload);
+
+    // servidor pide código 2FA
+    if (res.data.requires_2fa) {
+      return { requires_2fa: true };
+    }
+
     const { access_token, refresh_token, user } = res.data;
 
     localStorage.setItem('access_token', access_token);

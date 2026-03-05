@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard, Ticket, Package, Users, Router,
-  BarChart3, ShieldCheck, LogOut, Menu, X, Wifi, Wallet,
+  BarChart3, ShieldCheck, LogOut, Menu, X, Wifi, Wallet, Settings,
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import { sellersApi } from '../services/api';
@@ -20,6 +20,7 @@ const navItems = [
   { to: '/admin/mikrotik', icon: Router, label: 'MikroTik' },
   { to: '/admin/reports', icon: BarChart3, label: 'Reportes' },
   { to: '/admin/audit', icon: ShieldCheck, label: 'Auditoría' },
+  { to: '/admin/settings', icon: Settings, label: 'Seguridad' },
 ];
 
 export default function AdminLayout() {

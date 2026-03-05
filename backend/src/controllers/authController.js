@@ -3,6 +3,8 @@ const { User, SellerBalance } = require('../models');
 const { generateAccessToken, generateRefreshToken } = require('../middleware/auth');
 const logger = require('../config/logger');
 const jwt = require('jsonwebtoken');
+const { authenticator } = require('otplib');
+const QRCode = require('qrcode');
 
 /**
  * POST /api/auth/login
@@ -14,7 +16,7 @@ const login = async (req, res, next) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { email, password } = req.body;
+    const { email, password, totp_code } = req.body;
 
     const user = await User.findOne({
       where: { email: email.toLowerCase().trim() },
@@ -27,6 +29,17 @@ const login = async (req, res, next) => {
 
     if (!user.is_active) {
       return res.status(403).json({ error: 'Tu cuenta está desactivada. Contacta al administrador.' });
+    }
+
+    // Si tiene 2FA habilitado, solicitar el código TOTP
+    if (user.two_fa_enabled) {
+      if (!totp_code) {
+        return res.status(200).json({ requires_2fa: true, message: 'Código 2FA requerido' });
+      }
+      const isValid = authenticator.verify({ token: totp_code, secret: user.two_fa_secret });
+      if (!isValid) {
+        return res.status(401).json({ error: 'Código 2FA incorrecto' });
+      }
     }
 
     const accessToken = generateAccessToken(user);
@@ -153,4 +166,84 @@ const changePasswordValidation = [
   body('new_password').isLength({ min: 8 }).withMessage('La nueva contraseña debe tener al menos 8 caracteres'),
 ];
 
-module.exports = { login, refreshToken, logout, me, changePassword, loginValidation, changePasswordValidation };
+/**
+ * POST /api/auth/2fa/setup - Generar secreto TOTP y QR para el admin
+ */
+const setup2FA = async (req, res, next) => {
+  try {
+    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Solo administradores' });
+
+    const secret = authenticator.generateSecret();
+    const appName = 'HotspotManager';
+    const otpauth = authenticator.keyuri(req.user.email, appName, secret);
+    const qrDataUrl = await QRCode.toDataURL(otpauth);
+
+    // Guardar secreto temporal (no activado hasta verificar)
+    await req.user.update({ two_fa_secret: secret });
+
+    return res.json({
+      secret,
+      qr_code: qrDataUrl,
+      message: 'Escanea el código QR con tu app de autenticación (Google Authenticator, Authy, etc)',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * POST /api/auth/2fa/verify - Verificar código y activar 2FA
+ */
+const verify2FA = async (req, res, next) => {
+  try {
+    const { code } = req.body;
+    if (!code) return res.status(400).json({ error: 'Código requerido' });
+    if (!req.user.two_fa_secret) return res.status(400).json({ error: 'Primero genera el secreto 2FA' });
+
+    const isValid = authenticator.verify({ token: code, secret: req.user.two_fa_secret });
+    if (!isValid) return res.status(400).json({ error: 'Código incorrecto. Verifica que la hora de tu dispositivo sea correcta.' });
+
+    await req.user.update({ two_fa_enabled: true });
+    logger.info(`2FA activado para ${req.user.email}`);
+
+    return res.json({ message: '2FA activado correctamente', two_fa_enabled: true });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * POST /api/auth/2fa/disable - Desactivar 2FA (requiere contraseña)
+ */
+const disable2FA = async (req, res, next) => {
+  try {
+    const { password } = req.body;
+    if (!password) return res.status(400).json({ error: 'Contraseña requerida para desactivar 2FA' });
+
+    const validPassword = await req.user.comparePassword(password);
+    if (!validPassword) return res.status(401).json({ error: 'Contraseña incorrecta' });
+
+    await req.user.update({ two_fa_enabled: false, two_fa_secret: null });
+    logger.info(`2FA desactivado para ${req.user.email}`);
+
+    return res.json({ message: '2FA desactivado', two_fa_enabled: false });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/auth/2fa/status - Obtener estado del 2FA
+ */
+const status2FA = async (req, res) => {
+  return res.json({
+    two_fa_enabled: req.user.two_fa_enabled ?? false,
+    role: req.user.role,
+  });
+};
+
+module.exports = {
+  login, refreshToken, logout, me, changePassword,
+  setup2FA, verify2FA, disable2FA, status2FA,
+  loginValidation, changePasswordValidation,
+};

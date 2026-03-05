@@ -48,6 +48,14 @@ const User = sequelize.define('User', {
     type: DataTypes.STRING(500),
     allowNull: true,
   },
+  two_fa_secret: {
+    type: DataTypes.STRING(255),
+    allowNull: true,
+  },
+  two_fa_enabled: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+  },
   device_id: {
     type: DataTypes.UUID,
     allowNull: true,
@@ -83,6 +91,7 @@ User.prototype.toJSON = function () {
   const values = { ...this.get() };
   delete values.password;
   delete values.refresh_token;
+  delete values.two_fa_secret;
   return values;
 };
 

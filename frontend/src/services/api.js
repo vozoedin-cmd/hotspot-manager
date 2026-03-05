@@ -53,6 +53,11 @@ export const authApi = {
   logout: () => api.post('/auth/logout'),
   me: () => api.get('/auth/me'),
   changePassword: (data) => api.post('/auth/change-password', data),
+  // 2FA
+  twoFAStatus: () => api.get('/auth/2fa/status'),
+  twoFASetup: () => api.post('/auth/2fa/setup'),
+  twoFAVerify: (data) => api.post('/auth/2fa/verify', data),
+  twoFADisable: (data) => api.post('/auth/2fa/disable', data),
 };
 
 // ── Dashboard / Reportes ──────────────────────────

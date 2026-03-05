@@ -28,7 +28,9 @@
     "socket.io": "^4.7.5",
     "uuid": "^10.0.0",
     "winston": "^3.13.0",
-    "node-cron": "^3.0.3"
+    "node-cron": "^3.0.3",
+    "otplib": "^12.0.1",
+    "qrcode": "^1.5.3"
   },
   "devDependencies": {
     "jest": "^29.7.0",

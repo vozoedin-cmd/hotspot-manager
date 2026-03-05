@@ -76,7 +76,7 @@ export default function SellerProfilePage() {
     e.preventDefault();
     if (passwords.newPass !== passwords.confirm) return toast.error('Las contraseñas no coinciden');
     if (passwords.newPass.length < 8) return toast.error('Mínimo 8 caracteres');
-    changePassword({ currentPassword: passwords.current, newPassword: passwords.newPass });
+    changePassword({ current_password: passwords.current, new_password: passwords.newPass });
   };
 
   const transactions = dash?.recentTransactions ?? [];

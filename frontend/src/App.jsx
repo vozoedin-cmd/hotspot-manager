@@ -20,6 +20,7 @@ import BalanceRequestsPage from './pages/admin/BalanceRequestsPage';
 import MikrotikDevicesPage from './pages/admin/MikrotikDevicesPage';
 import ReportsPage from './pages/admin/ReportsPage';
 import AuditPage from './pages/admin/AuditPage';
+import AdminSettingsPage from './pages/admin/AdminSettingsPage';
 
 // Seller Pages
 import SellerDashboardPage from './pages/seller/SellerDashboardPage';
@@ -90,6 +91,7 @@ export default function App() {
           <Route path="mikrotik" element={<MikrotikDevicesPage />} />
           <Route path="reports" element={<ReportsPage />} />
           <Route path="audit" element={<AuditPage />} />
+          <Route path="settings" element={<AdminSettingsPage />} />
         </Route>
 
         {/* Seller Routes */}
