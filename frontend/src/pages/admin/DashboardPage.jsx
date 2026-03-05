@@ -1,13 +1,18 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { reportsApi, mikrotikApi } from '../../services/api';
 import {
   Ticket, Users, Router, TrendingUp, CheckCircle,
   XCircle, Clock, DollarSign, RefreshCw, Wifi,
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import toast from 'react-hot-toast';
 import { DashboardSkeleton, QueryError } from '../../components/Skeleton';
+import {
+  ResponsiveContainer, AreaChart, Area,
+  XAxis, YAxis, CartesianGrid, Tooltip,
+} from 'recharts';
 
 const StatCard = ({ title, value, subtitle, icon: Icon, color = 'blue', loading }) => {
   const colors = {
@@ -53,10 +58,18 @@ const DeviceStatusBadge = ({ status }) => {
 };
 
 export default function DashboardPage() {
+  const [chartDays, setChartDays] = useState(7);
+
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ['dashboard'],
     queryFn: () => reportsApi.dashboard().then(r => r.data.data),
     refetchInterval: 60000,
+  });
+
+  const { data: chartData } = useQuery({
+    queryKey: ['sales-by-day', chartDays],
+    queryFn: () => reportsApi.salesByDay(chartDays).then(r => r.data.data),
+    staleTime: 5 * 60 * 1000,
   });
 
   const handleRefresh = async () => {
@@ -147,6 +160,76 @@ export default function DashboardPage() {
           color="green"
           loading={isLoading}
         />
+      </div>
+
+      {/* Sales Chart */}
+      <div className="card">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="font-semibold text-gray-800 dark:text-gray-100">Ventas diarias</h2>
+            <p className="text-xs text-gray-400 mt-0.5">Ingresos por día</p>
+          </div>
+          <div className="flex gap-1">
+            {[7, 14, 30].map(d => (
+              <button
+                key={d}
+                onClick={() => setChartDays(d)}
+                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+                  chartDays === d
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600'
+                }`}
+              >
+                {d}d
+              </button>
+            ))}
+          </div>
+        </div>
+        {chartData && chartData.length > 0 ? (
+          <ResponsiveContainer width="100%" height={220}>
+            <AreaChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis
+                dataKey="day"
+                tickFormatter={v => format(parseISO(v), 'd MMM', { locale: es })}
+                tick={{ fontSize: 11, fill: '#9ca3af' }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tickFormatter={v => `Q${v}`}
+                tick={{ fontSize: 11, fill: '#9ca3af' }}
+                axisLine={false}
+                tickLine={false}
+                width={52}
+              />
+              <Tooltip
+                formatter={(v) => [`Q${parseFloat(v).toFixed(2)}`, 'Ingresos']}
+                labelFormatter={(l) => format(parseISO(l), "EEEE d 'de' MMMM", { locale: es })}
+                contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e5e7eb' }}
+              />
+              <Area
+                type="monotone"
+                dataKey="revenue"
+                stroke="#3b82f6"
+                strokeWidth={2}
+                fill="url(#revGrad)"
+                dot={{ r: 3, fill: '#3b82f6', strokeWidth: 0 }}
+                activeDot={{ r: 5 }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="h-[220px] flex items-center justify-center text-gray-400 text-sm">
+            Sin datos de ventas en este período
+          </div>
+        )}
       </div>
 
       {/* Devices Status */}

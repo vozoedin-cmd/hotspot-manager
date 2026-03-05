@@ -198,6 +198,49 @@ const getSalesByPackage = async (req, res, next) => {
 };
 
 /**
+ * GET /api/reports/sales-by-day - Ventas agrupadas por día (últimos N días)
+ */
+const getSalesByDay = async (req, res, next) => {
+  try {
+    const days = Math.min(parseInt(req.query.days) || 7, 90);
+    const since = new Date();
+    since.setDate(since.getDate() - days + 1);
+    since.setHours(0, 0, 0, 0);
+
+    const rows = await Sale.findAll({
+      where: { created_at: { [Op.gte]: since } },
+      attributes: [
+        [fn('DATE', col('created_at')), 'day'],
+        [fn('COUNT', col('id')), 'sales'],
+        [fn('SUM', col('amount')), 'revenue'],
+      ],
+      group: [fn('DATE', col('created_at'))],
+      order: [[fn('DATE', col('created_at')), 'ASC']],
+      raw: true,
+    });
+
+    // Fill missing days with 0
+    const map = {};
+    rows.forEach(r => { map[r.day] = r; });
+    const result = [];
+    for (let i = 0; i < days; i++) {
+      const d = new Date(since);
+      d.setDate(d.getDate() + i);
+      const key = d.toISOString().slice(0, 10);
+      result.push({
+        day: key,
+        sales: map[key] ? parseInt(map[key].sales) : 0,
+        revenue: map[key] ? parseFloat(map[key].revenue) : 0,
+      });
+    }
+
+    return res.json({ data: result });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * GET /api/reports/seller-dashboard - Panel del vendedor
  */
 const getSellerDashboard = async (req, res, next) => {
@@ -252,5 +295,6 @@ module.exports = {
   getSalesReport,
   getSalesBySeller,
   getSalesByPackage,
+  getSalesByDay,
   getSellerDashboard,
 };

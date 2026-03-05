@@ -67,6 +67,7 @@ export const reportsApi = {
   sales: (params) => api.get('/reports/sales', { params }),
   salesBySeller: (params) => api.get('/reports/sales-by-seller', { params }),
   salesByPackage: (params) => api.get('/reports/sales-by-package', { params }),
+  salesByDay: (days = 7) => api.get('/reports/sales-by-day', { params: { days } }),
 };
 
 // ── Paquetes ──────────────────────────────────────
