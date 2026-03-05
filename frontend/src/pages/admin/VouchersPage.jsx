@@ -249,7 +249,7 @@ export default function VouchersPage() {
                       <td className="px-4 py-3 text-gray-500 text-xs">{v.device?.name || '-'}</td>
                       <td className="px-4 py-3 text-gray-500 text-xs">{v.seller?.name || '-'}</td>
                       <td className="px-4 py-3 text-gray-400 text-xs">
-                        {format(new Date(v.created_at), 'dd/MM/yy HH:mm')}
+                        {v.created_at ? format(new Date(v.created_at), 'dd/MM/yy HH:mm') : '-'}
                       </td>
                       <td className="px-4 py-3 text-right">
                         {v.status === 'available' && (

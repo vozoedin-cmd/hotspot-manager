@@ -42,7 +42,7 @@ class VoucherService {
       for (const code of codes) {
         // Generar contraseña según tipo
         const password = voucherType === 'pin'
-          ? code   // PIN: usuario y contraseña son iguales
+          ? ''   // PIN: solo código, contraseña vacía
           : MikrotikService.generateVoucherCode('', pwdLength, numbersOnly);
 
         // Crear en MikroTik

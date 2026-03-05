@@ -1,42 +1,61 @@
-import paramiko, time
+﻿import paramiko, os, time
+BASE = r'C:\Users\Dell\Desktop\fdfgrfg'
 ssh = paramiko.SSHClient()
 ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 ssh.connect('167.99.58.189', username='root', password='1998humber-C1d', timeout=30)
+sftp = ssh.open_sftp()
 
-print("=== Mounts del contenedor hotspot_app ===")
-_, out, _ = ssh.exec_command('docker inspect hotspot_app --format "{{json .HostConfig.Binds}}" 2>&1')
-print(out.read().decode(errors='replace'))
+# 1. Subir voucherService.js al backend en VPS
+sftp.put(os.path.join(BASE, r'backend\src\services\voucherService.js'), '/opt/hotspot/backend/src/services/voucherService.js')
+print('voucherService.js subido')
 
-print("\n=== Rebuilding image hotspot-app:latest ===")
-_, out, _ = ssh.exec_command('docker build -t hotspot-app:latest /opt/hotspot/backend/ 2>&1')
-out.channel.recv_exit_status()
-output = out.read().decode(errors='replace')
-# Mostrar solo las ultimas lineas
-lines = output.strip().splitlines()
-for l in lines[-15:]:
-    print(l)
+# 2. Subir frontend dist
+remote_dist = '/opt/hotspot/frontend/dist'
+ssh.exec_command(f'rm -rf {remote_dist} && mkdir -p {remote_dist}')[1].channel.recv_exit_status()
 
-print("\n=== Reiniciando contenedor ===")
-restart_cmd = (
-    'docker stop hotspot_app 2>/dev/null; '
-    'docker rm hotspot_app 2>/dev/null; '
-    'docker run -d --name hotspot_app '
-    '--network deploy_hotspot_net '
-    '--restart unless-stopped '
-    '--env-file /opt/hotspot/backend/.env '
-    '-e DB_HOST=db '
-    '-e NODE_ENV=production '
-    '-v /opt/hotspot/backend/logs:/app/logs '
-    '-v /opt/hotspot/backend/backups:/app/backups '
-    'hotspot-app:latest'
+def upload_dir(sftp, ssh, local_dir, remote_dir):
+    ssh.exec_command(f'mkdir -p {remote_dir}')[1].channel.recv_exit_status()
+    for entry in os.listdir(local_dir):
+        local_path  = os.path.join(local_dir, entry)
+        remote_path = remote_dir + '/' + entry
+        if os.path.isdir(local_path):
+            upload_dir(sftp, ssh, local_path, remote_path)
+        else:
+            sftp.put(local_path, remote_path)
+
+upload_dir(sftp, ssh, os.path.join(BASE, r'frontend\dist'), remote_dist)
+print('Frontend dist subido')
+
+# 3. Rebuild + restart en background (no esperar)
+build_restart = (
+    'docker build -t hotspot-app:latest /opt/hotspot/backend/ > /tmp/docker_build.log 2>&1 && '
+    'docker stop hotspot_app 2>/dev/null; docker rm hotspot_app 2>/dev/null; '
+    'docker run -d --name hotspot_app --network deploy_hotspot_net --restart unless-stopped '
+    '--env-file /opt/hotspot/backend/.env -e DB_HOST=db -e NODE_ENV=production '
+    '-v /opt/hotspot/backend/logs:/app/logs -v /opt/hotspot/backend/backups:/app/backups '
+    'hotspot-app:latest && echo RESTART_OK >> /tmp/docker_build.log'
 )
-_, out, err = ssh.exec_command(restart_cmd)
-out.channel.recv_exit_status()
-print(out.read().decode(errors='replace').strip() or err.read().decode(errors='replace').strip())
+ssh.exec_command(f'nohup bash -c \'{build_restart}\' > /tmp/docker_build.log 2>&1 &')
+print('Build+restart lanzado en background, esperando 90s...')
+sftp.close()
+ssh.close()
 
-time.sleep(5)
-_, out, _ = ssh.exec_command('docker logs --tail 10 hotspot_app 2>&1')
-print('\n=== Logs ===')
+# Esperar y reconectar para ver resultado
+time.sleep(90)
+ssh2 = paramiko.SSHClient()
+ssh2.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+ssh2.connect('167.99.58.189', username='root', password='1998humber-C1d', timeout=30)
+
+_, out, _ = ssh2.exec_command('tail -5 /tmp/docker_build.log 2>&1')
+print('Build log:', out.read().decode(errors='replace'))
+
+_, out, _ = ssh2.exec_command('docker ps --format "table {{.Names}}\t{{.Status}}" 2>&1')
 print(out.read().decode(errors='replace'))
 
-ssh.close()
+_, out, _ = ssh2.exec_command('docker logs --tail 6 hotspot_app 2>&1')
+print(out.read().decode(errors='replace'))
+
+ssh2.exec_command('docker exec hotspot_nginx nginx -s reload 2>/dev/null')
+print('Nginx reloaded')
+ssh2.close()
+print('=== DONE ===')
