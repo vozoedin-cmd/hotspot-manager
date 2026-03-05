@@ -11,7 +11,10 @@ const listPackages = async (req, res, next) => {
     const where = {};
     if (is_active !== undefined) where.is_active = is_active === 'true';
     if (device_id) {
+      // Mostrar paquetes del router seleccionado + paquetes globales (device_id NULL)
       where[Op.or] = [{ device_id }, { device_id: null }];
+    } else {
+      // Sin filtro de router: mostrar todos
     }
 
     const packages = await Package.findAll({
