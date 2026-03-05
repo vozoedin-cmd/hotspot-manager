@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import useAuthStore from './store/authStore';
+import useThemeStore from './store/themeStore';
 
 // Layouts
 import AdminLayout from './layouts/AdminLayout';
@@ -54,9 +55,11 @@ const RequireAuth = ({ children, role }) => {
 export default function App() {
   const initialize = useAuthStore((s) => s.initialize);
   const { user, isAuthenticated } = useAuthStore();
+  const initTheme = useThemeStore((s) => s.init);
 
   useEffect(() => {
     initialize();
+    initTheme();
   }, []);
 
   return (

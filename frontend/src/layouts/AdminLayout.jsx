@@ -3,13 +3,14 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard, Ticket, Package, Users, Router,
-  BarChart3, ShieldCheck, LogOut, Menu, X, Wifi, Wallet, Settings,
+  BarChart3, ShieldCheck, LogOut, Menu, X, Wifi, Wallet, Settings, Sun, Moon,
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import { sellersApi } from '../services/api';
 import toast from 'react-hot-toast';
 import useSocket from '../hooks/useSocket';
 import NotificationBell from '../components/NotificationBell';
+import useThemeStore from '../store/themeStore';
 
 const navItems = [
   { to: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
@@ -27,6 +28,7 @@ export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
+  const { isDark, toggle: toggleTheme } = useThemeStore();
   useSocket(user);
 
   const { data: countData } = useQuery({
@@ -101,12 +103,19 @@ export default function AdminLayout() {
           <LogOut className="w-4 h-4" />
           Cerrar sesión
         </button>
+        <button
+          onClick={toggleTheme}
+          className="flex items-center gap-2 w-full px-3 py-2 text-blue-100 hover:text-white hover:bg-white/10 rounded-lg text-sm transition-colors mt-1"
+        >
+          {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          {isDark ? 'Modo claro' : 'Modo oscuro'}
+        </button>
       </div>
     </div>
   );
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex flex-col w-64 bg-blue-800 flex-shrink-0">
         <SidebarContent />
@@ -143,7 +152,7 @@ export default function AdminLayout() {
         </header>
 
         {/* Content */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 dark:bg-gray-900">
           <Outlet />
         </main>
       </div>
