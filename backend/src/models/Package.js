@@ -52,6 +52,12 @@ const Package = sequelize.define('Package', {
     type: DataTypes.STRING(100),
     allowNull: true,
   },
+  // Router MikroTik al que pertenece este paquete (null = global)
+  device_id: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    comment: 'Router MikroTik al que pertenece este paquete',
+  },
   is_active: {
     type: DataTypes.BOOLEAN,
     defaultValue: true,

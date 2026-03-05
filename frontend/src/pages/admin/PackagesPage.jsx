@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { packagesApi } from '../../services/api';
-import { Plus, Edit, Trash2, Package, Clock } from 'lucide-react';
+import { packagesApi, mikrotikApi } from '../../services/api';
+import { Plus, Edit, Trash2, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const EMPTY_FORM = {
   name: '', description: '', duration_value: 1, duration_unit: 'hours',
   price: '', cost: '', speed_download: '', speed_upload: '',
-  mikrotik_profile: '', color: '#3B82F6', is_active: true,
+  mikrotik_profile: '', color: '#3B82F6', is_active: true, device_id: '',
 };
 
 const DURATION_UNITS = {
@@ -23,6 +23,11 @@ export default function PackagesPage() {
   const { data: packages, isLoading } = useQuery({
     queryKey: ['packages-all'],
     queryFn: () => packagesApi.list().then(r => r.data.data),
+  });
+
+  const { data: devices } = useQuery({
+    queryKey: ['devices'],
+    queryFn: () => mikrotikApi.list().then(r => r.data.data),
   });
 
   const saveMutation = useMutation({
@@ -54,7 +59,7 @@ export default function PackagesPage() {
       price: pkg.price, cost: pkg.cost,
       speed_download: pkg.speed_download || '', speed_upload: pkg.speed_upload || '',
       mikrotik_profile: pkg.mikrotik_profile || '', color: pkg.color || '#3B82F6',
-      is_active: pkg.is_active,
+      is_active: pkg.is_active, device_id: pkg.device_id || '',
     });
     setModal(true);
   };
@@ -128,6 +133,13 @@ export default function PackagesPage() {
                   </code>
                 </div>
               )}
+              {pkg.device_id && (
+                <div className="pt-0.5">
+                  <span className="text-xs bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded">
+                    {devices?.find(d => d.id === pkg.device_id)?.name || 'Router asignado'}
+                  </span>
+                </div>
+              )}
             </div>
 
             {!pkg.is_active && (
@@ -185,6 +197,16 @@ export default function PackagesPage() {
                 <div>
                   <label className="label">Perfil MikroTik</label>
                   <input className="input" value={form.mikrotik_profile} onChange={e => setForm({ ...form, mikrotik_profile: e.target.value })} placeholder="default" />
+                </div>
+                <div>
+                  <label className="label">Router MikroTik</label>
+                  <select className="input" value={form.device_id} onChange={e => setForm({ ...form, device_id: e.target.value })}>
+                    <option value="">Global (todos los routers)</option>
+                    {devices?.map(d => (
+                      <option key={d.id} value={d.id}>{d.name}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-400 mt-1">Asigna este paquete a un router específico</p>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>

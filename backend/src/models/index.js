@@ -41,6 +41,10 @@ BalanceRequest.belongsTo(User, { foreignKey: 'reviewed_by', as: 'reviewer' });
 Package.hasMany(Voucher, { foreignKey: 'package_id', as: 'vouchers' });
 Voucher.belongsTo(Package, { foreignKey: 'package_id', as: 'package' });
 
+// Paquete <-> Dispositivo MikroTik
+Package.belongsTo(MikrotikDevice, { foreignKey: 'device_id', as: 'device' });
+MikrotikDevice.hasMany(Package, { foreignKey: 'device_id', as: 'packages' });
+
 // Paquete <-> Ventas
 Package.hasMany(Sale, { foreignKey: 'package_id', as: 'sales' });
 Sale.belongsTo(Package, { foreignKey: 'package_id', as: 'package' });

@@ -7,9 +7,12 @@ const { Op } = require('sequelize');
  */
 const listPackages = async (req, res, next) => {
   try {
-    const { is_active } = req.query;
+    const { is_active, device_id } = req.query;
     const where = {};
     if (is_active !== undefined) where.is_active = is_active === 'true';
+    if (device_id) {
+      where[Op.or] = [{ device_id }, { device_id: null }];
+    }
 
     const packages = await Package.findAll({
       where,
@@ -114,6 +117,7 @@ const packageValidation = [
   body('duration_unit').isIn(['minutes', 'hours', 'days', 'weeks', 'months']).withMessage('Unidad de duración inválida'),
   body('price').isFloat({ min: 0 }).withMessage('Precio inválido'),
   body('cost').isFloat({ min: 0 }).withMessage('Costo inválido'),
+  body('device_id').optional({ nullable: true }).isUUID().withMessage('device_id inválido'),
 ];
 
 module.exports = { listPackages, getPackage, createPackage, updatePackage, deletePackage, packageValidation };

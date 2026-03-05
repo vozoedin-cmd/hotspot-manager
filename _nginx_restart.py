@@ -1,0 +1,10 @@
+import paramiko
+ssh = paramiko.SSHClient()
+ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+ssh.connect('167.99.58.189', username='root', password='1998humber-C1d', timeout=30)
+_, out, err = ssh.exec_command('docker restart hotspot_nginx 2>&1')
+out.channel.recv_exit_status()
+print('nginx restart:', out.read().decode(errors='replace'))
+_, out, _ = ssh.exec_command('docker ps --format "{{.Names}} {{.Status}}" 2>&1')
+print(out.read().decode(errors='replace'))
+ssh.close()
