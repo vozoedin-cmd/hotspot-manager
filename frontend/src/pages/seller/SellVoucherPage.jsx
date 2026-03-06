@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { packagesApi, vouchersApi, reportsApi } from '../../services/api';
+import useAuthStore from '../../store/authStore';
 import toast from 'react-hot-toast';
 import { CheckCircle, Wifi, Clock, Copy, RefreshCw, Wallet } from 'lucide-react';
 
@@ -52,10 +53,17 @@ export default function SellVoucherPage() {
   const [clientName, setClientName] = useState('');
   const [soldVoucher, setSoldVoucher] = useState(null);
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
+
+  // device_id asignado por el admin al vendedor
+  const deviceId = user?.device_id || null;
 
   const { data: pkgsData } = useQuery({
-    queryKey: ['packages-for-sell'],
-    queryFn: () => packagesApi.list().then((r) => r.data),
+    queryKey: ['packages-for-sell', deviceId],
+    queryFn: () => packagesApi.list({
+      is_active: 'true',
+      ...(deviceId ? { device_id: deviceId } : {}),
+    }).then((r) => r.data),
   });
 
   const { data: dashData } = useQuery({
