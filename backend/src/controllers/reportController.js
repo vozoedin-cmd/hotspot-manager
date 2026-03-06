@@ -250,7 +250,7 @@ const getSellerDashboard = async (req, res, next) => {
     today.setHours(0, 0, 0, 0);
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
 
-    const [sellerBalance, salesToday, salesMonth, recentSales, recentTransactions] = await Promise.all([
+    const [sellerBalance, salesToday, salesMonth, spentMonth, recentSales, recentTransactions] = await Promise.all([
       SellerBalance.findOne({ where: { seller_id: sellerId } }),
       Sale.count({ where: { seller_id: sellerId, created_at: { [Op.gte]: today } } }),
       Sale.count({
@@ -258,6 +258,11 @@ const getSellerDashboard = async (req, res, next) => {
           seller_id: sellerId,
           created_at: { [Op.gte]: monthStart },
         },
+      }),
+      Sale.findOne({
+        attributes: [[fn('COALESCE', fn('SUM', col('amount')), 0), 'total']],
+        where: { seller_id: sellerId, created_at: { [Op.gte]: monthStart } },
+        raw: true,
       }),
       Sale.findAll({
         where: { seller_id: sellerId },
@@ -278,6 +283,7 @@ const getSellerDashboard = async (req, res, next) => {
     return res.json({
       balance: parseFloat(sellerBalance?.balance) || 0,
       monthlyLimit: parseFloat(sellerBalance?.monthly_limit) || 2000,
+      monthlySpent: parseFloat(spentMonth?.total) || 0,
       totalEarned: parseFloat(sellerBalance?.total_earned) || 0,
       totalSpent: parseFloat(sellerBalance?.total_spent) || 0,
       todaySales: salesToday,

@@ -39,6 +39,7 @@ export default function SellerDashboardPage() {
   const sales = dash?.recentSales ?? [];
   const balance = dash?.balance ?? 0;
   const monthlyLimit = dash?.monthlyLimit ?? 2000;
+  const monthlySpent = dash?.monthlySpent ?? 0;
   const todaySales = dash?.todaySales ?? 0;
   const monthSales = dash?.monthSales ?? 0;
   const revenueToday = sales
@@ -64,13 +65,13 @@ export default function SellerDashboardPage() {
         </p>
         <div className="mt-3">
           <div className="flex justify-between text-xs opacity-75 mb-1">
-            <span>Usado este mes</span>
-            <span>Q{Number(monthlyLimit - balance).toFixed(2)} / Q{Number(monthlyLimit).toFixed(2)}</span>
+            <span>Ventas este mes</span>
+            <span>Q{Number(monthlySpent).toFixed(2)} / Q{Number(monthlyLimit).toFixed(2)}</span>
           </div>
           <div className="h-1.5 bg-blue-400 rounded-full">
             <div
               className="h-1.5 bg-white rounded-full transition-all"
-              style={{ width: `${Math.min(100, ((monthlyLimit - balance) / monthlyLimit) * 100)}%` }}
+              style={{ width: `${Math.min(100, (monthlySpent / monthlyLimit) * 100)}%` }}
             />
           </div>
         </div>

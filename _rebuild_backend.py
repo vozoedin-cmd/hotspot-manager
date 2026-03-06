@@ -14,6 +14,8 @@ sftp.put(os.path.join(BASE, r'backend\src\services\mikrotikService.js'), '/opt/h
 print('mikrotikService.js subido')
 sftp.put(os.path.join(BASE, r'backend\src\controllers\voucherController.js'), '/opt/hotspot/backend/src/controllers/voucherController.js')
 print('voucherController.js subido')
+sftp.put(os.path.join(BASE, r'backend\src\controllers\reportController.js'), '/opt/hotspot/backend/src/controllers/reportController.js')
+print('reportController.js subido')
 sftp.close()
 
 cmd = (
