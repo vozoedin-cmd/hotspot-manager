@@ -1,0 +1,447 @@
+{% extends 'layout.html' %}
+{% block title %}Gestión de Planes — VoucherForge Pro{% endblock %}
+
+{% block content %}
+<header class="header">
+    <div>
+        <h1><i class="fas fa-layer-group"
+                style="color: var(--primary-light); margin-right: 8px; font-size: 1.2rem;"></i>Gestión de Planes y
+            Perfiles</h1>
+        <p>Administre perfiles de usuario, velocidades, scripts on-login/on-logout y sincronice directamente con su
+            router MikroTik.</p>
+    </div>
+    <div style="display: flex; gap: 8px;">
+        <button class="btn btn-secondary" onclick="syncProfiles()"><i class="fas fa-sync"></i> Sincronizar</button>
+    </div>
+</header>
+
+<div class="page-3col">
+    <!-- ==================== COLUMNA 1: PERFILES DEL ROUTER ==================== -->
+    <div>
+        <div class="section-box" style="margin-bottom: 16px;">
+            <h3 class="section-title"><i class="fas fa-router"></i> Perfiles de MikroTik</h3>
+            <div class="profiles-list" id="profiles-list">
+                {% for profile in mikrotik_profiles %}
+                <div class="profile-card" onclick="loadProfile('{{ profile.name }}')">
+                    <div class="pc-header">
+                        <div class="pc-name-row">
+                            <div class="pc-dot"
+                                style="background: {{ planes_colors.get(profile.name, '#6366f1') }}; color: {{ planes_colors.get(profile.name, '#6366f1') }};">
+                            </div>
+                            <span>{{ profile.name }}</span>
+                        </div>
+                        <div class="pc-badges">
+                            {% if profile.name in planes_names %}
+                            <span class="pc-badge tech">PRO</span>
+                            {% endif %}
+                            {% if profile.get('on-login', '')|length > 20 %}
+                            <span class="pc-badge mac">SCRIPT</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="pc-details">
+                        <span><i class="fas fa-clock"></i> {{ profile.get('session-timeout', 'Sin límite') }}</span>
+                        <span><i class="fas fa-users"></i> {{ profile.get('shared-users', '1') }} Usuarios</span>
+                        <span><i class="fas fa-tachometer-alt"></i> {{ profile.get('rate-limit', 'Sin límite') }}</span>
+                        <span><i class="fas fa-database"></i> {{ profile.get('keepalive-timeout', '—') }}</span>
+                    </div>
+                    {% if profile.get('rate-limit') %}
+                    {% set speeds = profile.get('rate-limit', '1M/1M').split('/') %}
+                    <div class="pc-speed-bars">
+                        <div class="speed-bar speed-up">
+                            <i class="fas fa-arrow-up" style="color: var(--success);"></i>
+                            <span>{{ speeds[0] if speeds|length > 0 else '—' }}</span>
+                            <div class="bar">
+                                <div class="bar-fill" style="width: 60%;"></div>
+                            </div>
+                        </div>
+                        <div class="speed-bar speed-down">
+                            <i class="fas fa-arrow-down" style="color: var(--warning);"></i>
+                            <span>{{ speeds[1] if speeds|length > 1 else speeds[0] }}</span>
+                            <div class="bar">
+                                <div class="bar-fill" style="width: 75%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                {% if not mikrotik_profiles %}
+                <div style="text-align: center; padding: 40px 16px; color: var(--secondary); font-size: 0.78rem;">
+                    <i class="fas fa-plug"
+                        style="font-size: 2.2rem; display: block; margin-bottom: 14px; opacity: 0.15;"></i>
+                    Conecte un router MikroTik para ver los perfiles de usuario.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Planes Registrados en BD -->
+        <div class="section-box">
+            <h3 class="section-title"><i class="fas fa-database"></i> Planes en Base de Datos</h3>
+            {% for plan in planes %}
+            <div class="profile-card" onclick="editPlan({{ plan.id }})">
+                <div class="pc-header">
+                    <div class="pc-name-row">
+                        <div class="pc-dot" style="background: {{ plan.color }}; color: {{ plan.color }};"></div>
+                        <span>{{ plan.nombre }}</span>
+                    </div>
+                    <div class="pc-badges">
+                        <span class="pc-badge tech"
+                            style="background: rgba(16,185,129,0.12); color: var(--success);">Q{{
+                            "%.0f"|format(plan.precio) }}</span>
+                    </div>
+                </div>
+                <div class="pc-details">
+                    <span><i class="fas fa-clock"></i> {{ plan.tiempo or '—' }}</span>
+                    <span><i class="fas fa-tachometer-alt"></i> {{ plan.velocidad or '—' }}</span>
+                    <span><i class="fas fa-hdd"></i> {{ plan.limite_datos or 'Ilimitado' }}</span>
+                    <span><i class="fas fa-users"></i> {{ plan.shared_users }} Usuarios</span>
+                </div>
+            </div>
+            {% endfor %}
+            {% if not planes %}
+            <div style="text-align: center; padding: 30px; color: var(--secondary); font-size: 0.78rem;">
+                <i class="fas fa-inbox"
+                    style="font-size: 1.5rem; display: block; margin-bottom: 10px; opacity: 0.2;"></i>
+                No hay planes registrados.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ==================== COLUMNA 2: FORMULARIO DE PLAN ==================== -->
+    <div>
+        <div class="plan-form-panel">
+            <h3 class="plan-form-title"><i class="fas fa-pen-fancy"></i> <span id="form-title-text">Crear Nuevo
+                    Plan</span></h3>
+
+            <!-- Toggle Técnico/Comercial -->
+            <div class="toggle-mode">
+                <span class="toggle-mode-label active" id="tm-tech">⚙️ Técnico</span>
+                <label class="switch" style="margin: 0 4px;">
+                    <input type="checkbox" id="mode-toggle" onchange="toggleMode()">
+                    <span class="slider"></span>
+                </label>
+                <span class="toggle-mode-label" id="tm-comm">💰 Comercial</span>
+            </div>
+
+            <input type="hidden" id="plan-id" value="">
+
+            <!-- Campos principales -->
+            <div class="form-row" style="margin-bottom: 14px;">
+                <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                    <label>Nombre del Perfil *</label>
+                    <input type="text" class="form-control" id="plan-nombre" placeholder="Ej: Plan Premium 3H">
+                </div>
+                <div class="form-group" style="width: 90px; margin-bottom: 0;">
+                    <label>Color</label>
+                    <input type="color" class="form-control" id="plan-color" value="#6366f1"
+                        style="height: 38px; padding: 4px; cursor: pointer;">
+                </div>
+            </div>
+
+            <div class="form-row" style="margin-bottom: 14px;">
+                <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                    <label><i class="fas fa-clock" style="color: var(--primary-light);"></i> Tiempo de Sesión</label>
+                    <input type="text" class="form-control" id="plan-tiempo" placeholder="Ej: 03:00:00">
+                </div>
+                <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                    <label><i class="fas fa-tachometer-alt" style="color: var(--warning);"></i> Rate Limit</label>
+                    <input type="text" class="form-control" id="plan-velocidad" placeholder="Ej: 2M/5M">
+                </div>
+            </div>
+
+            <!-- Acordeón: Parámetros Comerciales -->
+            <div class="plan-accordion" id="acc-commercial">
+                <div class="plan-acc-header" onclick="toggleAccordion(this)">
+                    <span class="pah-title"><i class="fas fa-dollar-sign"></i> Parámetros Comerciales</span>
+                    <i class="fas fa-chevron-down pah-arrow"></i>
+                </div>
+                <div class="plan-acc-body">
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 1;">
+                            <label>Precio por Voucher (Q)</label>
+                            <input type="number" class="form-control" id="plan-precio" placeholder="5.00" step="0.5">
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label>Vender Como</label>
+                            <select class="form-control" id="plan-vender-como">
+                                <option value="pin">PIN Numérico</option>
+                                <option value="user_pass">Usuario/Contraseña</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <label class="toggle-switch">
+                                <label class="switch">
+                                    <input type="checkbox" id="plan-auto-eliminar" checked>
+                                    <span class="slider"></span>
+                                </label>
+                                Auto-eliminar vouchers expirados
+                            </label>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Acordeón: Control de Acceso -->
+            <div class="plan-accordion">
+                <div class="plan-acc-header" onclick="toggleAccordion(this)">
+                    <span class="pah-title"><i class="fas fa-user-shield"></i> Control de Acceso</span>
+                    <i class="fas fa-chevron-down pah-arrow"></i>
+                </div>
+                <div class="plan-acc-body">
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 1;">
+                            <label>Usuarios Compartidos</label>
+                            <input type="number" class="form-control" id="plan-shared" placeholder="1" value="1"
+                                min="1">
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label>Validez (después del primer uso)</label>
+                            <input type="text" class="form-control" id="plan-validez" placeholder="Ej: 30d, 7d, 3d">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Límite de Datos</label>
+                        <input type="text" class="form-control" id="plan-limite-datos"
+                            placeholder="Ej: 500M, 1G, 5G (vacío = ilimitado)">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Acordeón: Scripts Avanzados -->
+            <div class="plan-accordion">
+                <div class="plan-acc-header" onclick="toggleAccordion(this)">
+                    <span class="pah-title"><i class="fas fa-terminal"></i> Scripts MikroTik Avanzados</span>
+                    <i class="fas fa-chevron-down pah-arrow"></i>
+                </div>
+                <div class="plan-acc-body">
+                    <div class="form-group">
+                        <label>Script On-Login (auto-generado si vacío)</label>
+                        <textarea class="form-control" id="plan-on-login" rows="5"
+                            placeholder="Se genera automáticamente con metadata, MAC-binding y validez..."
+                            style="font-family: 'Consolas', monospace; font-size: 0.72rem; resize: vertical;"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Script On-Logout</label>
+                        <textarea class="form-control" id="plan-on-logout" rows="3"
+                            placeholder="Se genera automáticamente..."
+                            style="font-family: 'Consolas', monospace; font-size: 0.72rem; resize: vertical;"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn-create-plan" id="btn-save-plan" onclick="savePlan()">
+                <i class="fas fa-save"></i> Crear Perfil en MikroTik + Guardar Plan
+            </button>
+
+            <div id="plan-form-status"
+                style="display: none; text-align: center; margin-top: 8px; font-size: 0.72rem; padding: 8px; border-radius: 8px;">
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== COLUMNA 3: PANEL DERECHO ==================== -->
+    <div>
+        <!-- Historial de Lotes -->
+        <div class="lotes-panel" style="margin-bottom: 16px;">
+            <div class="lotes-panel-header">
+                <h3><i class="fas fa-history" style="color: var(--primary-light); margin-right: 6px;"></i>Historial de
+                    Lotes</h3>
+                <select>
+                    <option>Recientes</option>
+                    <option>Por Plan</option>
+                    <option>Por Servidor</option>
+                </select>
+            </div>
+            <input type="text" class="lotes-search" placeholder="🔍 Buscar lote por perfil, ID...">
+            <div class="lotes-list">
+                {% for lote in lotes %}
+                <div class="lote-card">
+                    <div class="lc-top">
+                        <span class="lc-plan">{{ lote.perfil }} (x{{ lote.cantidad }}) <span class="lc-id">{{
+                                lote.id_lote[:8] }}</span></span>
+                    </div>
+                    <div class="lc-meta">
+                        <span>Servidor: <strong>{{ lote.servidor }}</strong></span>
+                        <span>{{ lote.fecha.strftime('%d/%m/%Y, %I:%M %p') if lote.fecha else '' }}</span>
+                    </div>
+                    <button class="btn-manage" onclick="window.location.href='/fichas?lote={{ lote.id_lote }}'">
+                        <i class="fas fa-eye"></i> Ver Fichas ({{ lote.vendidos }}/{{ lote.cantidad }})
+                    </button>
+                </div>
+                {% endfor %}
+                {% if not lotes %}
+                <div style="text-align: center; padding: 30px; color: var(--secondary); font-size: 0.78rem;">
+                    <i class="fas fa-inbox"
+                        style="font-size: 1.5rem; display: block; margin-bottom: 10px; opacity: 0.2;"></i>
+                    Sin lotes registrados.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Registro de Sistema -->
+        <div class="log-panel">
+            <h3><i class="fas fa-terminal" style="color: var(--primary-light); margin-right: 6px;"></i>Registro de
+                Sistema</h3>
+            <div class="log-list" id="system-log">
+                {% for log in system_logs %}
+                <div class="log-entry">
+                    <div class="log-dot {{ log.color }}"></div>
+                    <span class="log-text">{{ log.text }}</span>
+                    <span class="log-time">{{ log.time }}</span>
+                </div>
+                {% endfor %}
+                {% if not system_logs %}
+                <div class="log-entry">
+                    <div class="log-dot blue"></div>
+                    <span class="log-text">Sistema listo. Conecte el router para ver los perfiles.</span>
+                    <span class="log-time">{{ now.strftime('%I:%M:%S %p') if now else '' }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Plan Data from server
+    const planesDB = {{ planes| map(attribute = 'to_dict') | list | tojson }};
+
+    function toggleMode() {
+        const isTech = !document.getElementById('mode-toggle').checked;
+        document.getElementById('tm-tech').classList.toggle('active', isTech);
+        document.getElementById('tm-comm').classList.toggle('active', !isTech);
+    }
+
+    function toggleAccordion(header) {
+        const body = header.nextElementSibling;
+        const isOpen = body.classList.contains('open');
+        body.classList.toggle('open', !isOpen);
+        header.classList.toggle('open', !isOpen);
+        const arrow = header.querySelector('.pah-arrow');
+        arrow.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+    }
+
+    function loadProfile(name) {
+        const plan = planesDB.find(p => p.nombre === name);
+        if (plan) {
+            editPlan(plan.id);
+        } else {
+            document.getElementById('plan-nombre').value = name;
+            document.getElementById('plan-id').value = '';
+            document.getElementById('form-title-text').textContent = `Registrar: ${name}`;
+            document.getElementById('btn-save-plan').innerHTML = '<i class="fas fa-plus-circle"></i> Registrar Perfil Existente';
+            showToast(`Perfil "${name}" cargado desde MikroTik. Complete los parámetros comerciales.`, 'info');
+            addLog(`Perfil MikroTik "${name}" seleccionado para registro.`, 'blue');
+        }
+    }
+
+    function editPlan(id) {
+        const plan = planesDB.find(p => p.id === id);
+        if (!plan) return;
+
+        document.getElementById('plan-id').value = plan.id;
+        document.getElementById('plan-nombre').value = plan.nombre;
+        document.getElementById('plan-precio').value = plan.precio;
+        document.getElementById('plan-tiempo').value = plan.tiempo || '';
+        document.getElementById('plan-velocidad').value = plan.velocidad || '';
+        document.getElementById('plan-limite-datos').value = plan.limite_datos || '';
+        document.getElementById('plan-validez').value = plan.validez || '';
+        document.getElementById('plan-shared').value = plan.shared_users || 1;
+        document.getElementById('plan-color').value = plan.color || '#6366f1';
+        document.getElementById('plan-vender-como').value = plan.vender_como || 'pin';
+        document.getElementById('plan-auto-eliminar').checked = plan.auto_eliminar !== false;
+        document.getElementById('plan-on-login').value = plan.on_login || '';
+        document.getElementById('plan-on-logout').value = plan.on_logout || '';
+
+        document.getElementById('form-title-text').textContent = `Editar: ${plan.nombre}`;
+        document.getElementById('btn-save-plan').innerHTML = '<i class="fas fa-save"></i> Actualizar Plan en MikroTik + Guardar';
+
+        showToast(`Plan "${plan.nombre}" cargado para edición.`, 'info');
+    }
+
+    function savePlan() {
+        const nombre = document.getElementById('plan-nombre').value.trim();
+        if (!nombre) {
+            showToast('El nombre del perfil es obligatorio.', 'error');
+            return;
+        }
+
+        const btn = document.getElementById('btn-save-plan');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sincronizando con MikroTik...';
+
+        const planData = {
+            id: document.getElementById('plan-id').value || null,
+            nombre: nombre,
+            precio: parseFloat(document.getElementById('plan-precio').value || 0),
+            tiempo: document.getElementById('plan-tiempo').value,
+            velocidad: document.getElementById('plan-velocidad').value,
+            limite_datos: document.getElementById('plan-limite-datos').value,
+            validez: document.getElementById('plan-validez').value,
+            shared_users: parseInt(document.getElementById('plan-shared').value || 1),
+            color: document.getElementById('plan-color').value,
+            vender_como: document.getElementById('plan-vender-como').value,
+            auto_eliminar: document.getElementById('plan-auto-eliminar').checked,
+            on_login: document.getElementById('plan-on-login').value,
+            on_logout: document.getElementById('plan-on-logout').value
+        };
+
+        $.ajax({
+            url: '/api/planes',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(planData),
+            success: function (res) {
+                showToast(`Plan "${nombre}" guardado y sincronizado con MikroTik.`, 'success');
+                addLog(`Plan "${nombre}" sincronizado con éxito en MikroTik.`, 'green');
+                setTimeout(() => location.reload(), 1500);
+            },
+            error: function (xhr) {
+                const msg = xhr.responseJSON?.error || 'Error desconocido';
+                showToast(`Error: ${msg}`, 'error');
+                addLog(`Error al guardar plan "${nombre}": ${msg}`, 'red');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save"></i> Reintentar';
+            }
+        });
+    }
+
+    function deletePlan(id) {
+        if (!confirm('¿Eliminar este plan del sistema y del router?')) return;
+        $.ajax({
+            url: `/api/planes/${id}`,
+            method: 'DELETE',
+            success: function () {
+                showToast('Plan eliminado correctamente.', 'success');
+                location.reload();
+            },
+            error: function () {
+                showToast('Error al eliminar el plan.', 'error');
+            }
+        });
+    }
+
+    function syncProfiles() {
+        showToast('Sincronizando perfiles con el router...', 'info');
+        addLog('Sincronización de perfiles iniciada...', 'blue');
+        setTimeout(() => location.reload(), 800);
+    }
+
+    function addLog(text, color) {
+        const log = document.getElementById('system-log');
+        const time = new Date().toLocaleTimeString('es-GT');
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+        entry.innerHTML = `<div class="log-dot ${color}"></div><span class="log-text">${text}</span><span class="log-time">${time}</span>`;
+        log.prepend(entry);
+    }
+</script>
+{% endblock %}

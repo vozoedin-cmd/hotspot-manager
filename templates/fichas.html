@@ -1,0 +1,1010 @@
+{% extends 'layout.html' %}
+{% block title %}Emisión de Lotes - CuzoNet PRO{% endblock %}
+
+{% block content %}
+<header class="header">
+    <div>
+        <h1>Emitir Nuevo Lote de Vouchers</h1>
+        <p>Hotspot Management Suite - Gestión Profesional de Fichas</p>
+    </div>
+</header>
+
+<div class="fichas-layout-pro">
+    <!-- COLUMNA 1: PARÁMETROS DEL LOTE -->
+    <div class="col-parameters">
+        <h3 class="panel-title">Parámetros del Lote</h3>
+        <div class="accordion-container">
+            <!-- 1. Configuración Esencial -->
+            <div class="accordion-item active">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                    <div class="accordion-label"><i class="fas fa-briefcase"></i> Configuración Esencial del Lote</div>
+                    <i class="fas fa-chevron-up accordion-arrow"></i>
+                </div>
+                <div class="accordion-body">
+                    <div class="form-group mb-4">
+                        <label>Servidor Hotspot de Destino</label>
+                        <div class="server-selector-grid" id="server-grid">
+                            {% for srv in hotspot_servers %}
+                            <div class="server-card {% if loop.first %}active{% endif %}"
+                                onclick="selectServer(this, '{{ srv.name }}')">
+                                <i class="fas fa-network-wired"></i>
+                                <span>{{ srv.name }}</span>
+                            </div>
+                            {% endfor %}
+                            {% if not hotspot_servers %}
+                            <div class="server-card active" onclick="selectServer(this, 'hotspot1')">
+                                <i class="fas fa-network-wired"></i>
+                                <span>hotspot1</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <input type="hidden" id="servidor"
+                            value="{% if hotspot_servers %}{{ hotspot_servers[0].name }}{% else %}hotspot1{% endif %}">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Seleccionar Plan Comercial</label>
+                        <div class="plan-selector-grid" id="plan-grid">
+                            {% for p in perfiles %}
+                            <div class="plan-card {% if loop.first %}active{% endif %}"
+                                style="--plan-color: {{ p.color }}"
+                                onclick="selectPlan(this, '{{ p.nombre }}', '{{ p.precio }}', '{{ p.color }}', '{{ p.tiempo }}')">
+                                <div class="plan-card-check"><i class="fas fa-check"></i></div>
+                                <span class="pc-name">{{ p.nombre }}</span>
+                                <span class="pc-price">{{ p.precio }} Q</span>
+                                <span class="pc-time">{{ p.tiempo }}</span>
+                            </div>
+                            {% endfor %}
+
+                            <!-- Perfiles de MikroTik no configurados en DB -->
+                            {% for mp in mikrotik_profiles %}
+                            {% set found = false %}
+                            {% for p in perfiles %}
+                            {% if p.nombre == mp.name %}{% set found = true %}{% endif %}
+                            {% endfor %}
+                            {% if not found %}
+                            <div class="plan-card" style="--plan-color: var(--primary)"
+                                onclick="selectPlan(this, '{{ mp.name }}', '0', '#6366f1', '')">
+                                <div class="plan-card-check"><i class="fas fa-check"></i></div>
+                                <span class="pc-name">{{ mp.name }}</span>
+                                <span class="pc-price">Sin Precio</span>
+                                <span class="pc-time">MT Profile</span>
+                            </div>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                        <input type="hidden" id="perfil"
+                            value="{% if perfiles %}{{ perfiles[0].nombre }}{% elif mikrotik_profiles %}{{ mikrotik_profiles[0].name }}{% endif %}">
+                        <input type="hidden" id="perfil_precio"
+                            value="{% if perfiles %}{{ perfiles[0].precio }}{% else %}0{% endif %}">
+                        <input type="hidden" id="perfil_color"
+                            value="{% if perfiles %}{{ perfiles[0].color }}{% else %}#6366f1{% endif %}">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Diseño y Contenido -->
+            <div class="accordion-item">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                    <div class="accordion-label"><i class="fas fa-layer-group"></i> Diseño y Contenido del Ticket</div>
+                    <i class="fas fa-chevron-down accordion-arrow"></i>
+                </div>
+                <div class="accordion-body" style="display: none;">
+                    <div class="form-group">
+                        <label>Modo de Credencial</label>
+                        <div class="mode-selector-pro">
+                            <div class="mode-option active" onclick="selectMode(this, 'pin')">
+                                <i class="fas fa-fingerprint"></i>
+                                <span>PIN</span>
+                            </div>
+                            <div class="mode-option" onclick="selectMode(this, 'usuario_password')">
+                                <i class="fas fa-user-lock"></i>
+                                <span>User/Pass</span>
+                            </div>
+                        </div>
+                        <input type="hidden" id="tipo" value="pin">
+                    </div>
+                    <div class="form-group">
+                        <label>DNS del Hotspot (para QR)</label>
+                        <input type="text" class="form-control" id="dns" value="cuzo.net" placeholder="ej: cuzo.net">
+                    </div>
+                    <div class="form-group" style="display: flex; justify-content: space-between; align-items: center;">
+                        <label>Código QR de Autologin</label>
+                        <div class="toggle-switch">
+                            <span style="font-size: 0.7rem; color: var(--secondary);">Off</span>
+                            <label class="switch">
+                                <input type="checkbox" id="qr_enabled" onchange="updatePreview()">
+                                <span class="slider round"></span>
+                            </label>
+                            <span style="font-size: 0.7rem; color: var(--light);">On</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Nombre en Ticket (Opcional)</label>
+                        <input type="text" class="form-control" id="nombreTicket" value="CuzoNet"
+                            oninput="updatePreview()">
+                    </div>
+                    <div class="form-group">
+                        <label>Comentario del Lote (Interno)</label>
+                        <textarea class="form-control" id="comentario" rows="2"
+                            placeholder="Ej: Lote para evento de fin de año"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Generación de Credenciales -->
+            <div class="accordion-item">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                    <div class="accordion-label"><i class="fas fa-key"></i> Generación de Credenciales</div>
+                    <i class="fas fa-chevron-down accordion-arrow"></i>
+                </div>
+                <div class="accordion-body" style="display: none;">
+                    <div class="form-group">
+                        <label>Cantidad a Generar</label>
+                        <div class="quantity-selector">
+                            <button onclick="changeQty(-10)">-10</button>
+                            <button onclick="changeQty(-1)">-</button>
+                            <input type="number" id="cantidad" value="10" min="1" max="500">
+                            <button onclick="changeQty(1)">+</button>
+                            <button onclick="changeQty(10)">+10</button>
+                        </div>
+                    </div>
+                    <div class="form-group" style="display: flex; justify-content: space-between; align-items: center;">
+                        <label>Modo de Generación</label>
+                        <div class="toggle-switch">
+                            <span style="font-size: 0.7rem; color: var(--primary-light);">Aleatorio</span>
+                            <label class="switch">
+                                <input type="checkbox" id="gen_custom">
+                                <span class="slider round"></span>
+                            </label>
+                            <span style="font-size: 0.7rem; color: var(--secondary);">Personalizado</span>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 1;">
+                            <label>Prefijo</label>
+                            <input type="text" class="form-control" id="prefijo" placeholder="Opcional"
+                                oninput="updatePreview()">
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label>Longitud</label>
+                            <select class="form-control" id="longitud" onchange="updatePreview()">
+                                <option value="4">4 caracteres</option>
+                                <option value="6" selected>6 caracteres</option>
+                                <option value="8">8 caracteres</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button class="btn-pro-generate" id="btnGenerar" onclick="generarLote()">
+            <i class="fas fa-cog fa-spin" style="display: none;" id="gen-spinner"></i>
+            <i class="fas fa-microchip" id="gen-icon"></i>
+            Crear y Generar Fichas
+        </button>
+    </div>
+
+    <!-- COLUMNA 2: PREVISUALIZACIÓN -->
+    <div class="col-preview">
+        <h3 class="preview-title">Previsualización en Tiempo Real</h3>
+        <div class="ticket-pro" id="mainTicket">
+            <div class="ticket-pro-header" id="ticketHeaderName">CuzoNet</div>
+            <div class="ticket-pro-body">
+                <div class="ticket-pro-plan" id="ticketPlanName">Seleccione un plan</div>
+                <div class="ticket-pro-label" id="ticketCredentialLabel">PIN DE ACCESO</div>
+                <div class="ticket-pro-code-box" id="code-box">
+                    <span id="ticketCode">123456</span>
+                </div>
+                <div class="ticket-pro-footer">
+                    <span>Costo: <strong id="ticketPrice">0.00 Q</strong></span>
+                </div>
+            </div>
+            <div id="ticket-qr" class="ticket-qr-overlay" style="display: none;">
+                <i class="fas fa-qrcode"></i>
+            </div>
+        </div>
+
+        <div class="preview-stats-pro">
+            <div class="ps-item">
+                <span class="ps-label">Inversión Lote</span>
+                <span class="ps-val" id="preview-total-cost">0.00 Q</span>
+            </div>
+            <div class="ps-item">
+                <span class="ps-label">Fichas a Generar</span>
+                <span class="ps-val" id="preview-total-qty">10</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- COLUMNA 3: HISTORIAL + REGISTRO -->
+    <div class="col-history">
+        <div class="history-panel">
+            <div class="history-header">
+                <h3>Historial de Lotes</h3>
+                <i class="fas fa-sync-alt refresh-history" onclick="location.reload()"></i>
+            </div>
+            <div class="search-box-pro">
+                <input type="text" placeholder="Buscar por nombre de perfil o ID...">
+            </div>
+            <div class="history-list-pro">
+                {% for lote in lotes %}
+                <div class="history-item-pro">
+                    <div class="hi-top">
+                        <span class="hi-perfil">{{ lote.perfil }} (x{{ lote.cantidad }})</span>
+                        <span class="hi-id">ID: {{ lote.id_lote }}</span>
+                        <button class="hi-delete" onclick="deleteLoteHistorial({{ lote.id }}, this)"><i class="fas fa-trash"></i></button>
+                    </div>
+                    <div class="hi-mid">
+                        <span>Servidor: <strong>{{ lote.servidor }}</strong></span>
+                        <span>{{ lote.fecha.strftime('%d/%m/%Y, %H:%M') }}</span>
+                    </div>
+                    <button class="btn-manage-vouchers" onclick="verFichas('{{ lote.id_lote }}', '{{ lote.perfil }}')">
+                        <i class="fas fa-list-ul"></i> Gestionar Vouchers ({{ lote.vendidos }}/{{ lote.cantidad }}
+                        Vendidos)
+                    </button>
+                </div>
+                {% endfor %}
+                {% if not lotes %}
+                <div class="empty-history">No hay lotes generados aún.</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="log-panel-pro">
+            <h3>Registro de Sistema</h3>
+            <div class="log-container-pro" id="system-log">
+                <div class="log-entry"><i class="fas fa-check-circle log-ok"></i> <span>Módulo de registro iniciado
+                        correctamente.</span></div>
+                <div class="log-entry"><i class="fas fa-info-circle log-info"></i> <span>Obteniendo lista de servidores
+                        Hotspot...</span></div>
+                {% if hotspot_servers %}
+                <div class="log-entry"><i class="fas fa-check-circle log-ok"></i> <span>{{ hotspot_servers|length }}
+                        servidor(es) Hotspot encontrado(s).</span></div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===================== MODAL: GESTIÓN DE VOUCHERS ===================== -->
+<div id="modal-fichas" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:9999; align-items:center; justify-content:center; padding:20px;">
+    <div style="background:var(--surface-solid); border:1px solid var(--border); border-radius:var(--radius-lg); width:100%; max-width:860px; max-height:85vh; display:flex; flex-direction:column; box-shadow:var(--shadow-lg);">
+        <!-- Header Modal -->
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:18px 22px; border-bottom:1px solid var(--border);">
+            <h3 style="font-size:0.9rem; font-weight:700; color:var(--light);"><i class="fas fa-ticket-alt" style="color:var(--primary-light); margin-right:8px;"></i><span id="modal-lote-title">Vouchers del Lote</span></h3>
+            <button onclick="cerrarModal()" style="background:none; border:none; color:var(--secondary); cursor:pointer; font-size:1.1rem;"><i class="fas fa-times"></i></button>
+        </div>
+        <!-- Body Modal -->
+        <div style="overflow-y:auto; flex:1; padding:18px 22px;">
+            <table style="width:100%; border-collapse:collapse; font-size:0.78rem;">
+                <thead>
+                    <tr style="color:var(--secondary); text-transform:uppercase; font-size:0.65rem; letter-spacing:0.8px; border-bottom:1px solid var(--border);">
+                        <th style="padding:8px 10px; text-align:left;">Código / Usuario</th>
+                        <th style="padding:8px 10px; text-align:left;">Contraseña</th>
+                        <th style="padding:8px 10px; text-align:left;">Estado</th>
+                        <th style="padding:8px 10px; text-align:left;">Vendido el</th>
+                        <th style="padding:8px 10px; text-align:left;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="modal-fichas-body">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<style>
+    .btn-tbl-sell {
+        background: rgba(16,185,129,0.15);
+        border: 1px solid rgba(16,185,129,0.3);
+        color: var(--success);
+        padding: 4px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.7rem;
+        font-weight: 600;
+        transition: var(--transition);
+    }
+    .btn-tbl-sell:hover { background: rgba(16,185,129,0.3); }
+    .btn-tbl-del {
+        background: rgba(239,68,68,0.12);
+        border: 1px solid rgba(239,68,68,0.25);
+        color: var(--danger);
+        padding: 4px 8px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.7rem;
+        transition: var(--transition);
+    }
+    .btn-tbl-del:hover { background: rgba(239,68,68,0.25); }
+    #modal-fichas-body tr { border-bottom: 1px solid var(--border); }
+    #modal-fichas-body tr:last-child { border-bottom: none; }
+    #modal-fichas-body td { padding: 9px 10px; vertical-align: middle; }
+</style>
+<script>
+    function toggleAccordion(header) {
+        const item = header.parentElement;
+        const body = item.querySelector('.accordion-body');
+        const arrow = header.querySelector('.accordion-arrow');
+        const isActive = item.classList.contains('active');
+
+        if (!isActive) {
+            // Cerrar otros
+            document.querySelectorAll('.accordion-item').forEach(i => {
+                i.classList.remove('active');
+                i.querySelector('.accordion-body').style.display = 'none';
+                i.querySelector('.accordion-arrow').className = 'fas fa-chevron-down accordion-arrow';
+            });
+            item.classList.add('active');
+            body.style.display = 'block';
+            arrow.className = 'fas fa-chevron-up accordion-arrow';
+        }
+    }
+
+    function selectPlan(element, nombre, precio, color, tiempo) {
+        // Remover activo de otros
+        document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('active'));
+        // Agregar activo a este
+        element.classList.add('active');
+
+        // Actualizar inputs ocultos
+        document.getElementById('perfil').value = nombre;
+        document.getElementById('perfil_precio').value = precio;
+        document.getElementById('perfil_color').value = color;
+
+        updatePreview();
+    }
+
+    function selectServer(element, nombre) {
+        document.querySelectorAll('.server-card').forEach(c => c.classList.remove('active'));
+        element.classList.add('active');
+        document.getElementById('servidor').value = nombre;
+        addLog(`Servidor seleccionado: ${nombre}`, 'info');
+    }
+
+    function selectMode(element, mode) {
+        document.querySelectorAll('.mode-option').forEach(o => o.classList.remove('active'));
+        element.classList.add('active');
+        document.getElementById('tipo').value = mode;
+        updatePreview();
+    }
+
+    function changeQty(val) {
+        const input = document.getElementById('cantidad');
+        let newVal = parseInt(input.value) + val;
+        if (newVal < 1) newVal = 1;
+        if (newVal > 500) newVal = 500;
+        input.value = newVal;
+        updatePreview();
+    }
+
+    function addLog(msg, type = 'ok') {
+        const log = document.getElementById('system-log');
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+        const icon = type === 'ok' ? 'fa-check-circle log-ok' : (type === 'error' ? 'fa-times-circle log-error' : 'fa-info-circle log-info');
+        const time = new Date().toLocaleTimeString();
+        entry.innerHTML = `<i class="fas ${icon}"></i> <span>${msg}</span> <small style="margin-left:auto; opacity:0.5">${time}</small>`;
+        log.prepend(entry);
+    }
+
+    function updatePreview() {
+        const perfilNombre = document.getElementById('perfil').value;
+        const precio = parseFloat(document.getElementById('perfil_precio').value || 0).toFixed(2);
+        const color = document.getElementById('perfil_color').value || '#3b82f6';
+        const tipo = document.getElementById('tipo').value;
+        const prefijo = document.getElementById('prefijo').value;
+        const longitud = document.getElementById('longitud').value;
+        const qr = document.getElementById('qr_enabled').checked;
+        const nombreTicket = document.getElementById('nombreTicket').value || 'CuzoNet';
+        const cantidad = parseInt(document.getElementById('cantidad').value || 0);
+
+        // Actualizar Ticket
+        document.getElementById('ticketHeaderName').textContent = nombreTicket;
+        document.getElementById('ticketPlanName').textContent = perfilNombre;
+        document.getElementById('ticketPrice').textContent = precio + ' Q';
+        document.getElementById('ticketCredentialLabel').textContent = tipo === 'pin' ? 'PIN DE ACCESO' : 'USUARIO Y CONTRASEÑA';
+
+        // Colores Dinámicos
+        document.getElementById('ticketHeaderName').style.backgroundColor = color;
+        document.getElementById('code-box').style.borderColor = color + '44'; // Transparencia
+
+        let dummyCode = prefijo + "123456789".substring(0, longitud);
+        document.getElementById('ticketCode').textContent = dummyCode;
+        document.getElementById('ticket-qr').style.display = qr ? 'flex' : 'none';
+
+        // Stats Preview
+        document.getElementById('preview-total-cost').textContent = (precio * cantidad).toFixed(2) + ' Q';
+        document.getElementById('preview-total-qty').textContent = cantidad;
+    }
+
+    async function generarLote() {
+        const btn = document.getElementById('btnGenerar');
+        const spinner = document.getElementById('gen-spinner');
+        const icon = document.getElementById('gen-icon');
+
+        btn.disabled = true;
+        spinner.style.display = 'inline-block';
+        icon.style.display = 'none';
+
+        const data = {
+            servidor: document.getElementById('servidor').value,
+            perfil: document.getElementById('perfil').value,
+            precio: document.getElementById('perfil_precio').value,
+            tipo: document.getElementById('tipo').value,
+            dns: document.getElementById('dns').value,
+            qr: document.getElementById('qr_enabled').checked,
+            nombre_ticket: document.getElementById('nombreTicket').value,
+            comentario: document.getElementById('comentario').value,
+            cantidad: document.getElementById('cantidad').value,
+            prefijo: document.getElementById('prefijo').value,
+            longitud: document.getElementById('longitud').value
+        };
+
+        addLog(`Iniciando generación de lote (${data.cantidad} fichas)...`, 'info');
+
+        try {
+            const r = await fetch('/api/generar-fichas', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const res = await r.json();
+            if (res.success) {
+                addLog(`Lote ${res.lote_id} creado exitosamente: ${res.creadas} fichas en router.`, 'ok');
+                setTimeout(() => location.reload(), 2000);
+            } else {
+                addLog(`Error en generación: ${res.error}`, 'error');
+                btn.disabled = false;
+                spinner.style.display = 'none';
+                icon.style.display = 'inline-block';
+            }
+        } catch (e) {
+            addLog(`Error de red o servidor: ${e.message}`, 'error');
+            btn.disabled = false;
+            spinner.style.display = 'none';
+            icon.style.display = 'inline-block';
+        }
+    }
+
+    // Inicializar listener de cantidad
+    document.getElementById('cantidad').addEventListener('input', updatePreview);
+
+    updatePreview();
+
+    // ===================== GESTIÓN DE LOTES =====================
+    function deleteLoteHistorial(id, btn) {
+        if (!confirm('¿Eliminar este lote y todas sus fichas?\nEsta acción también borrará los usuarios en MikroTik.')) return;
+        btn.disabled = true;
+        fetch(`/api/lotes/${id}`, { method: 'DELETE' })
+            .then(r => r.json())
+            .then(res => {
+                if (res.success) {
+                    addLog(`Lote eliminado: ${res.eliminadas} fichas removidas.`, 'ok');
+                    setTimeout(() => location.reload(), 1200);
+                } else {
+                    addLog('Error al eliminar el lote.', 'error');
+                    btn.disabled = false;
+                }
+            })
+            .catch(() => { addLog('Error de red al eliminar lote.', 'error'); btn.disabled = false; });
+    }
+
+    // ===================== MODAL DE FICHAS =====================
+    function verFichas(idLote, perfil) {
+        const modal = document.getElementById('modal-fichas');
+        const title = document.getElementById('modal-lote-title');
+        const body = document.getElementById('modal-fichas-body');
+        title.textContent = `Vouchers del Lote — ${perfil} (${idLote})`;
+        body.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--secondary)"><i class="fas fa-spinner fa-spin"></i> Cargando...</td></tr>';
+        modal.style.display = 'flex';
+
+        fetch(`/api/fichas/lote/${idLote}`)
+            .then(r => r.json())
+            .then(res => {
+                if (!res.success || !res.fichas.length) {
+                    body.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--secondary)">Sin fichas registradas.</td></tr>';
+                    return;
+                }
+                body.innerHTML = res.fichas.map(f => {
+                    const estadoColor = f.estado === 'disponible' ? 'var(--success)' : f.estado === 'vendida' ? 'var(--warning)' : 'var(--secondary)';
+                    const estadoBadge = `<span style="color:${estadoColor}; font-weight:700; text-transform:uppercase; font-size:0.7rem;">${f.estado}</span>`;
+                    const acciones = f.estado === 'disponible'
+                        ? `<button class="btn-tbl-sell" onclick="venderFicha(${f.id}, this)"><i class="fas fa-dollar-sign"></i> Vender</button>
+                           <button class="btn-tbl-del" onclick="eliminarFicha(${f.id}, this)"><i class="fas fa-trash"></i></button>`
+                        : `<button class="btn-tbl-del" onclick="eliminarFicha(${f.id}, this)"><i class="fas fa-trash"></i></button>`;
+                    return `<tr>
+                        <td><code style="font-size:0.82rem; color:var(--primary-light);">${f.codigo}</code></td>
+                        <td style="color:var(--secondary); font-size:0.75rem;">${f.password || '—'}</td>
+                        <td>${estadoBadge}</td>
+                        <td style="font-size:0.72rem; color:var(--secondary);">${f.vendido_el || '—'}</td>
+                        <td style="display:flex; gap:6px;">${acciones}</td>
+                    </tr>`;
+                }).join('');
+                // Guardar referencia actual
+                document.getElementById('modal-fichas').dataset.idLote = idLote;
+                document.getElementById('modal-fichas').dataset.perfil = perfil;
+            })
+            .catch(() => {
+                body.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--danger)">Error al cargar fichas.</td></tr>';
+            });
+    }
+
+    function cerrarModal() {
+        document.getElementById('modal-fichas').style.display = 'none';
+    }
+
+    function venderFicha(id, btn) {
+        if (!confirm('¿Marcar esta ficha como vendida?')) return;
+        btn.disabled = true;
+        fetch(`/api/fichas/${id}/vender`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({vendedor: 'Manual'}) })
+            .then(r => r.json())
+            .then(res => {
+                if (res.success) {
+                    addLog(`Ficha ${res.ficha.codigo} marcada como vendida.`, 'ok');
+                    // Recargar modal
+                    const m = document.getElementById('modal-fichas');
+                    verFichas(m.dataset.idLote, m.dataset.perfil);
+                } else {
+                    addLog(`Error: ${res.error}`, 'error');
+                    btn.disabled = false;
+                }
+            })
+            .catch(() => { addLog('Error de red.', 'error'); btn.disabled = false; });
+    }
+
+    function eliminarFicha(id, btn) {
+        if (!confirm('¿Eliminar esta ficha? Se borrará también de MikroTik.')) return;
+        btn.disabled = true;
+        fetch(`/api/fichas/${id}`, { method: 'DELETE' })
+            .then(r => r.json())
+            .then(res => {
+                if (res.success) {
+                    addLog('Ficha eliminada correctamente.', 'ok');
+                    const m = document.getElementById('modal-fichas');
+                    verFichas(m.dataset.idLote, m.dataset.perfil);
+                } else {
+                    addLog('Error al eliminar ficha.', 'error');
+                    btn.disabled = false;
+                }
+            })
+            .catch(() => { addLog('Error de red.', 'error'); btn.disabled = false; });
+    }
+
+    // Cerrar modal al hacer clic fuera
+    document.getElementById('modal-fichas').addEventListener('click', function(e) {
+        if (e.target === this) cerrarModal();
+    });
+
+    // Auto-abrir si viene con ?lote=... en la URL
+    (function() {
+        const params = new URLSearchParams(window.location.search);
+        const loteParam = params.get('lote');
+        {% if lote_activo %}
+        verFichas('{{ lote_activo.id_lote }}', '{{ lote_activo.perfil }}');
+        {% endif %}
+    })();
+</script>
+
+<style>
+    /* ==================== LAYOUT PRO ==================== */
+    .fichas-layout-pro {
+        display: grid;
+        grid-template-columns: 450px 1fr 350px;
+        gap: 20px;
+        align-items: start;
+        margin-top: 20px;
+    }
+
+    .panel-title {
+        font-size: 0.9rem;
+        margin-bottom: 15px;
+        color: var(--light);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    /* Accordion Custom */
+    .accordion-container {
+        background: rgba(30, 41, 59, 0.4);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    .accordion-header {
+        padding: 14px 18px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        background: rgba(255, 255, 255, 0.02);
+        transition: all 0.2s;
+    }
+
+    .accordion-header:hover {
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .accordion-label {
+        font-size: 0.82rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .accordion-label i {
+        width: 16px;
+        color: var(--secondary);
+    }
+
+    .accordion-item.active .accordion-label i {
+        color: var(--primary-light);
+    }
+
+    .accordion-body {
+        padding: 20px;
+        background: rgba(15, 23, 42, 0.2);
+    }
+
+    /* ==================== SELECTORES VISUALES ==================== */
+
+    /* Servidores */
+    .server-selector-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        gap: 10px;
+    }
+
+    .server-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 2px solid var(--border);
+        padding: 12px;
+        border-radius: 10px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .server-card i {
+        font-size: 1.2rem;
+        color: var(--secondary);
+    }
+
+    .server-card span {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--secondary);
+    }
+
+    .server-card:hover {
+        transform: translateY(-3px);
+        border-color: rgba(59, 130, 246, 0.3);
+    }
+
+    .server-card.active {
+        background: rgba(59, 130, 246, 0.1);
+        border-color: var(--primary);
+        box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);
+    }
+
+    .server-card.active i {
+        color: var(--primary-light);
+    }
+
+    .server-card.active span {
+        color: white;
+    }
+
+    /* Planes */
+    .plan-selector-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        max-height: 280px;
+        overflow-y: auto;
+        padding-right: 5px;
+    }
+
+    .plan-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 2px solid var(--border);
+        padding: 12px 15px;
+        border-radius: 12px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        position: relative;
+        transition: all 0.2s ease;
+    }
+
+    .plan-card:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: var(--plan-color);
+    }
+
+    .plan-card-check {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.6rem;
+        color: white;
+        transition: all 0.3s;
+    }
+
+    .plan-card.active {
+        border-color: var(--plan-color);
+        background: linear-gradient(90deg, rgba(255, 255, 255, 0.04) 0%, transparent 100%);
+    }
+
+    .plan-card.active .plan-card-check {
+        background: var(--plan-color);
+        border-color: var(--plan-color);
+    }
+
+    .pc-name {
+        font-weight: 700;
+        font-size: 0.85rem;
+        flex: 1;
+    }
+
+    .pc-price {
+        font-weight: 800;
+        color: var(--success);
+        font-size: 0.9rem;
+    }
+
+    .pc-time {
+        font-size: 0.65rem;
+        color: var(--secondary);
+        background: rgba(255, 255, 255, 0.05);
+        padding: 2px 6px;
+        border-radius: 4px;
+    }
+
+    /* Mode Selector Pro */
+    .mode-selector-pro {
+        display: flex;
+        gap: 10px;
+    }
+
+    .mode-option {
+        flex: 1;
+        padding: 12px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        text-align: center;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s;
+    }
+
+    .mode-option i {
+        font-size: 1rem;
+        color: var(--secondary);
+    }
+
+    .mode-option span {
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+
+    .mode-option.active {
+        border-color: var(--primary);
+        background: rgba(99, 102, 241, 0.1);
+    }
+
+    .mode-option.active i {
+        color: var(--primary-light);
+    }
+
+    /* Quantity Selector */
+    .quantity-selector {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .quantity-selector button {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--border);
+        color: white;
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 700;
+        transition: all 0.2s;
+    }
+
+    .quantity-selector button:hover {
+        background: var(--primary);
+    }
+
+    .quantity-selector input {
+        flex: 1;
+        background: rgba(15, 23, 42, 0.5);
+        border: 1px solid var(--border);
+        height: 40px;
+        border-radius: 8px;
+        text-align: center;
+        color: white;
+        font-weight: 800;
+        font-size: 1.1rem;
+    }
+
+    /* ==================== PREVIEW EN TIEMPO REAL ==================== */
+    .col-preview {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 40px 20px;
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 20px;
+        border: 1px solid var(--border);
+    }
+
+    .preview-title {
+        font-size: 1rem;
+        margin-bottom: 25px;
+        color: var(--primary-light);
+    }
+
+    .ticket-pro {
+        width: 300px;
+        background: #f8fafc;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 40px 100px rgba(0, 0, 0, 0.7);
+        color: #0f172a;
+        position: relative;
+        transition: transform 0.3s;
+    }
+
+    .ticket-pro:hover {
+        transform: scale(1.02);
+    }
+
+    .ticket-pro-header {
+        background: #3b82f6;
+        color: white;
+        padding: 15px;
+        text-align: center;
+        font-weight: 800;
+        font-size: 1.2rem;
+        letter-spacing: 2px;
+        transition: background-color 0.5s ease;
+    }
+
+    .ticket-pro-body {
+        padding: 25px;
+        text-align: center;
+    }
+
+    .ticket-pro-plan {
+        font-weight: 700;
+        font-size: 1.1rem;
+        margin-bottom: 15px;
+    }
+
+    .ticket-pro-label {
+        font-size: 0.65rem;
+        color: #64748b;
+        letter-spacing: 2px;
+        margin-bottom: 8px;
+    }
+
+    .ticket-pro-code-box {
+        background: white;
+        border: 2px solid #e2e8f0;
+        padding: 15px;
+        border-radius: 10px;
+        font-family: 'Monaco', monospace;
+        font-size: 1.8rem;
+        font-weight: 800;
+        letter-spacing: 3px;
+        margin: 15px 0;
+        transition: border-color 0.5s ease;
+    }
+
+    .ticket-pro-footer {
+        margin-top: 20px;
+        padding-top: 15px;
+        border-top: 1px dashed #cbd5e1;
+        font-size: 0.9rem;
+    }
+
+    .preview-stats-pro {
+        margin-top: 30px;
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+    }
+
+    .ps-item {
+        background: rgba(255, 255, 255, 0.03);
+        padding: 15px;
+        border-radius: 12px;
+        text-align: center;
+    }
+
+    .ps-label {
+        display: block;
+        font-size: 0.65rem;
+        color: var(--secondary);
+        text-transform: uppercase;
+        margin-bottom: 5px;
+    }
+
+    .ps-val {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: var(--light);
+    }
+
+    /* ==================== BUTTON GENERATE ==================== */
+    .btn-pro-generate {
+        width: 100%;
+        margin-top: 20px;
+        padding: 18px;
+        background: linear-gradient(135deg, #6366f1, #4f46e5);
+        border: none;
+        border-radius: 14px;
+        color: white;
+        font-weight: 800;
+        font-size: 1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        transition: all 0.3s;
+    }
+
+    .btn-pro-generate:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
+    }
+
+    .btn-pro-generate:active {
+        transform: translateY(0);
+    }
+
+    /* Scrollbar */
+    .plan-selector-grid::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    .plan-selector-grid::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border-radius: 4px;
+    }
+
+    @media (max-width: 1400px) {
+        .fichas-layout-pro {
+            grid-template-columns: 400px 1fr 320px;
+        }
+    }
+</style>
+{% endblock %}

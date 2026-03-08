@@ -1,0 +1,674 @@
+{% extends 'layout.html' %}
+{% block title %}Configuración - CuzoNet PRO{% endblock %}
+
+{% block content %}
+<div class="config-vf-layout">
+    <!-- ==================== PANEL IZQUIERDO: MIS DISPOSITIVOS ==================== -->
+    <div class="devices-panel">
+        <h2 class="devices-title">Mis Dispositivos</h2>
+
+        <button class="btn-add-router" onclick="showAddForm()">
+            <i class="fas fa-plus-circle"></i> Añadir Router
+        </button>
+
+        <div class="devices-list" id="devices-list">
+            {% if config %}
+            <div class="device-card active" id="device-{{ config.id }}" onclick="selectDevice(this, {{ config.id }})">
+                <div class="device-icon">
+                    <i class="fas fa-bolt"></i>
+                </div>
+                <div class="device-info">
+                    <span class="device-name" id="device-name-{{ config.id }}">ROUTER PRINCIPAL</span>
+                    <div class="device-meta">
+                        <span class="device-model" id="device-model-{{ config.id }}"><i class="fas fa-microchip"></i>
+                            Detectando...</span>
+                        <span class="device-ip"><i class="fas fa-network-wired"></i> {{ config.host }} ({{
+                            config.username }})</span>
+                    </div>
+                </div>
+                <div class="device-status-dot online" id="device-dot-{{ config.id }}"></div>
+            </div>
+            {% endif %}
+
+            {% if not config %}
+            <div class="empty-devices">
+                <i class="fas fa-router" style="font-size: 2rem; opacity: 0.2; margin-bottom: 10px;"></i>
+                <p>No hay dispositivos registrados.</p>
+                <p style="font-size: 0.7rem; color: var(--secondary);">Añade tu primer router MikroTik para comenzar.
+                </p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ==================== PANEL DERECHO: FORMULARIO ==================== -->
+    <div class="config-form-panel">
+        <div class="form-brand">
+            <span class="brand-name">CuzoNet Hotspot</span>
+            <span class="brand-pro">Pro</span>
+        </div>
+        <p class="form-subtitle">Registrar nuevo punto de acceso</p>
+
+        <!-- TABS: Rápido / Seguro -->
+        <div class="config-tabs">
+            <button class="config-tab active" onclick="switchTab(this, 'fast')">
+                <i class="fas fa-bolt"></i> Rápido (Puerto 80)
+            </button>
+            <button class="config-tab" onclick="switchTab(this, 'secure')">
+                <i class="fas fa-shield-alt"></i> Seguro (SSL)
+            </button>
+        </div>
+
+        <form id="configForm" autocomplete="off">
+            <div class="vf-form-group">
+                <input type="text" class="vf-input" id="alias" placeholder=" "
+                    value="{% if config %}Router Principal{% endif %}">
+                <label class="vf-label">ALIAS (Ej: Casa, Oficina, Torre Norte)</label>
+            </div>
+
+            <div class="vf-form-row">
+                <div class="vf-form-group" style="flex: 2;">
+                    <input type="text" class="vf-input" id="host" placeholder=" "
+                        value="{{ config.host if config else '' }}" required>
+                    <label class="vf-label">IP Host / Dominio</label>
+                </div>
+                <div class="vf-form-group" style="flex: 1;">
+                    <input type="text" class="vf-input" id="username" placeholder=" "
+                        value="{{ config.username if config else 'admin' }}" required>
+                    <label class="vf-label">Usuario</label>
+                </div>
+            </div>
+
+            <div class="vf-form-group">
+                <input type="password" class="vf-input" id="password" placeholder=" "
+                    value="{{ config.password if config else '' }}" required>
+                <label class="vf-label">Contraseña de Administración</label>
+                <button type="button" class="toggle-pass" onclick="togglePassword()">
+                    <i class="fas fa-eye" id="eye-icon"></i>
+                </button>
+            </div>
+
+            <input type="hidden" id="port" value="{{ config.port if config else 80 }}">
+            <input type="hidden" id="use_ssl" value="{% if config and config.use_ssl %}true{% else %}false{% endif %}">
+
+            <button type="submit" class="btn-save-config" id="btnSave">
+                <i class="fas fa-lock" id="save-icon"></i>
+                <i class="fas fa-spinner fa-spin" id="save-spinner" style="display: none;"></i>
+                Guardar Configuración
+            </button>
+        </form>
+
+        <!-- Resultado de la conexión -->
+        <div class="connection-result" id="connection-result" style="display: none;">
+            <div class="result-icon" id="result-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="result-text" id="result-text">Conexión exitosa</div>
+            <div class="result-detail" id="result-detail"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Tab switching
+    function switchTab(el, mode) {
+        document.querySelectorAll('.config-tab').forEach(t => t.classList.remove('active'));
+        el.classList.add('active');
+
+        if (mode === 'fast') {
+            document.getElementById('port').value = '80';
+            document.getElementById('use_ssl').value = 'false';
+        } else {
+            document.getElementById('port').value = '443';
+            document.getElementById('use_ssl').value = 'true';
+        }
+    }
+
+    // Toggle Password visibility
+    function togglePassword() {
+        const input = document.getElementById('password');
+        const icon = document.getElementById('eye-icon');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.className = 'fas fa-eye-slash';
+        } else {
+            input.type = 'password';
+            icon.className = 'fas fa-eye';
+        }
+    }
+
+    // Select device
+    function selectDevice(el, id) {
+        document.querySelectorAll('.device-card').forEach(c => c.classList.remove('active'));
+        el.classList.add('active');
+    }
+
+    // Show add form (clear fields)
+    function showAddForm() {
+        document.getElementById('alias').value = '';
+        document.getElementById('host').value = '';
+        document.getElementById('username').value = 'admin';
+        document.getElementById('password').value = '';
+        document.getElementById('host').focus();
+
+        // Deseleccionar dispositivos
+        document.querySelectorAll('.device-card').forEach(c => c.classList.remove('active'));
+    }
+
+    // Show connection result
+    function showResult(success, message, detail) {
+        const box = document.getElementById('connection-result');
+        const icon = document.getElementById('result-icon');
+        const text = document.getElementById('result-text');
+        const det = document.getElementById('result-detail');
+
+        box.style.display = 'flex';
+        text.textContent = message;
+        det.textContent = detail || '';
+
+        if (success) {
+            box.className = 'connection-result success';
+            icon.innerHTML = '<i class="fas fa-check-circle"></i>';
+        } else {
+            box.className = 'connection-result error';
+            icon.innerHTML = '<i class="fas fa-times-circle"></i>';
+        }
+
+        // Auto-hide after 5 seconds
+        setTimeout(() => { box.style.display = 'none'; }, 6000);
+    }
+
+    // Save config
+    document.getElementById('configForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('btnSave');
+        const spinner = document.getElementById('save-spinner');
+        const icon = document.getElementById('save-icon');
+
+        btn.disabled = true;
+        spinner.style.display = 'inline-block';
+        icon.style.display = 'none';
+
+        const data = {
+            host: document.getElementById('host').value,
+            port: document.getElementById('port').value,
+            username: document.getElementById('username').value,
+            password: document.getElementById('password').value,
+            use_ssl: document.getElementById('use_ssl').value === 'true'
+        };
+
+        try {
+            const r = await fetch('/api/config/mikrotik', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const res = await r.json();
+
+            if (res.success) {
+                // Test connection
+                const statusR = await fetch('/api/mikrotik/status');
+                const statusData = await statusR.json();
+
+                if (statusData.status === 'online') {
+                    showResult(true, '¡Conexión Exitosa!', `Identidad: ${statusData.identity} | Host: ${data.host}`);
+                    // Update device card info
+                    const resR = await fetch('/api/mikrotik/resources');
+                    const resData = await resR.json();
+                    if (resData.success) {
+                        const modelEl = document.querySelector('.device-model');
+                        if (modelEl) modelEl.innerHTML = `<i class="fas fa-microchip"></i> ${resData.board} (v${resData.version})`;
+                    }
+                } else {
+                    showResult(false, 'Guardado pero sin conexión', statusData.error || 'No se pudo conectar al router');
+                }
+
+                setTimeout(() => location.reload(), 3000);
+            }
+        } catch (e) {
+            showResult(false, 'Error de Red', e.message);
+        }
+
+        btn.disabled = false;
+        spinner.style.display = 'none';
+        icon.style.display = 'inline-block';
+    });
+
+    // Auto-detect device info on load
+    (async function () {
+        try {
+            const r = await fetch('/api/mikrotik/resources');
+            const data = await r.json();
+            if (data.success) {
+                const modelEl = document.querySelector('.device-model');
+                if (modelEl) modelEl.innerHTML = `<i class="fas fa-microchip"></i> ${data.board} (v${data.version})`;
+                const nameEl = document.querySelector('.device-name');
+                // Keep the alias
+            }
+        } catch (e) { }
+    })();
+</script>
+
+<style>
+    /* ==================== VF PRO LAYOUT ==================== */
+    .config-vf-layout {
+        display: grid;
+        grid-template-columns: 380px 1fr;
+        gap: 0;
+        min-height: calc(100vh - 80px);
+        margin: -2rem -2.5rem;
+    }
+
+    /* ==================== PANEL IZQUIERDO ==================== */
+    .devices-panel {
+        background: rgba(15, 20, 35, 0.95);
+        border-right: 1px solid var(--border);
+        padding: 40px 30px;
+    }
+
+    .devices-title {
+        font-size: 1.4rem;
+        font-weight: 800;
+        text-align: center;
+        margin-bottom: 25px;
+        letter-spacing: 0.5px;
+    }
+
+    .btn-add-router {
+        width: 100%;
+        padding: 14px;
+        background: linear-gradient(135deg, #22d3ee, #06b6d4);
+        border: none;
+        border-radius: 10px;
+        color: white;
+        font-weight: 700;
+        font-size: 0.9rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 30px;
+        transition: all 0.3s;
+    }
+
+    .btn-add-router:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(34, 211, 238, 0.3);
+    }
+
+    /* Device Cards */
+    .devices-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .device-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 18px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        position: relative;
+    }
+
+    .device-card:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(34, 211, 238, 0.3);
+    }
+
+    .device-card.active {
+        background: rgba(34, 211, 238, 0.06);
+        border-color: rgba(34, 211, 238, 0.4);
+        box-shadow: 0 0 20px rgba(34, 211, 238, 0.1);
+    }
+
+    .device-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #22d3ee, #06b6d4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+
+    .device-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .device-name {
+        font-weight: 700;
+        font-size: 0.9rem;
+        display: block;
+        margin-bottom: 5px;
+        letter-spacing: 0.5px;
+    }
+
+    .device-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+    }
+
+    .device-model,
+    .device-ip {
+        font-size: 0.7rem;
+        color: var(--secondary);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .device-model i,
+    .device-ip i {
+        color: #22d3ee;
+        font-size: 0.6rem;
+        width: 12px;
+    }
+
+    .device-status-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    .device-status-dot.online {
+        background: #10b981;
+        box-shadow: 0 0 8px #10b981;
+        animation: dot-pulse 2s infinite;
+    }
+
+    .device-status-dot.offline {
+        background: #ef4444;
+        box-shadow: 0 0 8px #ef4444;
+    }
+
+    @keyframes dot-pulse {
+
+        0%,
+        100% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: 0.4;
+        }
+    }
+
+    .empty-devices {
+        text-align: center;
+        padding: 40px 20px;
+        color: var(--secondary);
+    }
+
+    /* ==================== PANEL DERECHO: FORMULARIO ==================== */
+    .config-form-panel {
+        padding: 50px 60px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        max-width: 700px;
+        margin: 0 auto;
+        width: 100%;
+    }
+
+    .form-brand {
+        text-align: center;
+        margin-bottom: 8px;
+    }
+
+    .brand-name {
+        font-size: 1.6rem;
+        font-weight: 800;
+        letter-spacing: 1px;
+    }
+
+    .brand-pro {
+        font-size: 1rem;
+        color: #22d3ee;
+        font-weight: 300;
+        font-style: italic;
+        margin-left: 5px;
+    }
+
+    .form-subtitle {
+        color: var(--secondary);
+        font-size: 0.85rem;
+        margin-bottom: 30px;
+        text-align: center;
+    }
+
+    /* Config Tabs */
+    .config-tabs {
+        display: flex;
+        width: 100%;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 12px;
+        padding: 4px;
+        margin-bottom: 30px;
+        border: 1px solid var(--border);
+    }
+
+    .config-tab {
+        flex: 1;
+        padding: 12px;
+        background: none;
+        border: none;
+        border-radius: 10px;
+        color: var(--secondary);
+        font-weight: 600;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .config-tab.active {
+        background: linear-gradient(135deg, #22d3ee, #0891b2);
+        color: white;
+        box-shadow: 0 4px 15px rgba(34, 211, 238, 0.3);
+    }
+
+    .config-tab:not(.active):hover {
+        color: var(--light);
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    /* VF Form Inputs (Floating Labels) */
+    #configForm {
+        width: 100%;
+    }
+
+    .vf-form-group {
+        position: relative;
+        margin-bottom: 20px;
+        width: 100%;
+    }
+
+    .vf-form-row {
+        display: flex;
+        gap: 15px;
+    }
+
+    .vf-input {
+        width: 100%;
+        padding: 18px 16px 8px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        color: var(--light);
+        font-size: 0.95rem;
+        font-family: 'Inter', sans-serif;
+        outline: none;
+        transition: all 0.3s ease;
+    }
+
+    .vf-input:focus {
+        border-color: #22d3ee;
+        background: rgba(34, 211, 238, 0.04);
+        box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.1);
+    }
+
+    .vf-label {
+        position: absolute;
+        left: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--secondary);
+        font-size: 0.85rem;
+        pointer-events: none;
+        transition: all 0.2s ease;
+    }
+
+    .vf-input:focus+.vf-label,
+    .vf-input:not(:placeholder-shown)+.vf-label {
+        top: 10px;
+        transform: translateY(0);
+        font-size: 0.6rem;
+        color: #22d3ee;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+    }
+
+    .toggle-pass {
+        position: absolute;
+        right: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: var(--secondary);
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: color 0.2s;
+    }
+
+    .toggle-pass:hover {
+        color: #22d3ee;
+    }
+
+    /* Save Button */
+    .btn-save-config {
+        width: 100%;
+        padding: 16px;
+        background: linear-gradient(135deg, #22d3ee, #0891b2);
+        border: none;
+        border-radius: 12px;
+        color: white;
+        font-weight: 800;
+        font-size: 1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 10px;
+        transition: all 0.3s;
+        letter-spacing: 0.5px;
+    }
+
+    .btn-save-config:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px rgba(34, 211, 238, 0.35);
+    }
+
+    .btn-save-config:active {
+        transform: translateY(0);
+    }
+
+    .btn-save-config:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+
+    /* Connection Result */
+    .connection-result {
+        width: 100%;
+        margin-top: 20px;
+        padding: 16px 20px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        animation: slideUp 0.4s ease;
+    }
+
+    .connection-result.success {
+        background: rgba(16, 185, 129, 0.1);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .connection-result.error {
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .result-icon {
+        font-size: 1.5rem;
+    }
+
+    .connection-result.success .result-icon {
+        color: #10b981;
+    }
+
+    .connection-result.error .result-icon {
+        color: #ef4444;
+    }
+
+    .result-text {
+        font-weight: 700;
+        font-size: 0.9rem;
+    }
+
+    .result-detail {
+        font-size: 0.75rem;
+        color: var(--secondary);
+        margin-left: auto;
+    }
+
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* ==================== RESPONSIVE ==================== */
+    @media (max-width: 1100px) {
+        .config-vf-layout {
+            grid-template-columns: 1fr;
+        }
+
+        .devices-panel {
+            border-right: none;
+            border-bottom: 1px solid var(--border);
+            padding: 25px;
+        }
+
+        .config-form-panel {
+            padding: 30px;
+        }
+    }
+</style>
+{% endblock %}

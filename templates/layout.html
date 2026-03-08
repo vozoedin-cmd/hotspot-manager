@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}VoucherForge Pro{% endblock %}</title>
+    <meta name="description" content="VoucherForge Pro — Sistema de Gestión de Hotspot y Vouchers MikroTik">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block head %}{% endblock %}
+    <style>
+        /* Page load animation */
+        .main-content {
+            animation: pageIn 0.5s ease-out;
+        }
+
+        @keyframes pageIn {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* CPU/Memory ring animation via conic-gradient */
+        .sbm-ring[data-percent] {
+            background: conic-gradient(var(--ring-color, var(--primary)) calc(var(--ring-val, 0) * 3.6deg),
+                    rgba(255, 255, 255, 0.06) 0deg);
+            -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #fff calc(100% - 3px));
+            mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #fff calc(100% - 3px));
+        }
+
+        .sbm-ring .sbm-percent-inner {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.55rem;
+            font-weight: 800;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Toast container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <div class="app-container">
+        <!-- ==================== SIDEBAR ==================== -->
+        <aside class="sidebar">
+            <div class="logo">
+                <div class="logo-icon"><i class="fas fa-bolt"></i></div>
+                <div>
+                    <span class="logo-brand">VoucherForge <span class="logo-pro">PRO</span></span>
+                    <div class="logo-sub">Hotspot Management Suite</div>
+                </div>
+            </div>
+
+            <ul class="nav-menu">
+                <li class="nav-item {% if request.path == '/' %}active{% endif %}">
+                    <a href="/" class="nav-link">
+                        <i class="fas fa-chart-pie"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="nav-item {% if request.path == '/trafico' %}active{% endif %}">
+                    <a href="#" class="nav-link">
+                        <i class="fas fa-chart-area"></i>
+                        <span>Monitor de Tráfico</span>
+                    </a>
+                </li>
+                <li class="nav-item {% if request.path == '/usuarios' %}active{% endif %}">
+                    <a href="#" class="nav-link">
+                        <i class="fas fa-users-cog"></i>
+                        <span>Gestión de Usuarios</span>
+                    </a>
+                </li>
+                <li class="nav-item {% if request.path == '/planes' %}active{% endif %}">
+                    <a href="/planes" class="nav-link">
+                        <i class="fas fa-layer-group"></i>
+                        <span>Gestión de Planes</span>
+                    </a>
+                </li>
+                <li class="nav-item {% if request.path == '/fichas' %}active{% endif %}">
+                    <a href="/fichas" class="nav-link">
+                        <i class="fas fa-ticket-alt"></i>
+                        <span>Emisión de Lotes</span>
+                    </a>
+                </li>
+                <li class="nav-item {% if request.path == '/configuracion' %}active{% endif %}">
+                    <a href="/configuracion" class="nav-link">
+                        <i class="fas fa-cogs"></i>
+                        <span>Configuración</span>
+                    </a>
+                </li>
+            </ul>
+
+            <div class="nav-separator"></div>
+            <ul class="nav-menu nav-menu-extra">
+                <li class="nav-item">
+                    <a href="#" class="nav-link"
+                        onclick="showToast('La guía de uso estará disponible próximamente.', 'info')">
+                        <i class="fas fa-book-open"></i>
+                        <span>Guía de Uso</span>
+                    </a>
+                </li>
+            </ul>
+
+            <!-- Router Connection Panel -->
+            <div class="sidebar-footer">
+                <div class="router-connection-panel" id="router-panel">
+                    <div class="rcp-status-row">
+                        <div id="mt-status" class="status-dot offline"></div>
+                        <span id="router-status-text" class="rcp-status-text">Verificando...</span>
+                    </div>
+
+                    <div class="rcp-details" id="router-details" style="display: none;">
+                        <div class="rcp-row">
+                            <span class="rcp-icon"><i class="fas fa-network-wired"></i></span>
+                            <span class="rcp-label">Host:</span>
+                            <span class="rcp-val" id="rd-host">—</span>
+                        </div>
+                        <div class="rcp-row">
+                            <span class="rcp-icon"><i class="fas fa-microchip"></i></span>
+                            <span class="rcp-label">Device:</span>
+                            <span class="rcp-val" id="rd-device">—</span>
+                        </div>
+                        <div class="rcp-row">
+                            <span class="rcp-icon"><i class="fas fa-code-branch"></i></span>
+                            <span class="rcp-label">RouterOS:</span>
+                            <span class="rcp-val" id="rd-version">—</span>
+                        </div>
+                    </div>
+
+                    <div class="rcp-meters" id="router-meters" style="display: none;">
+                        <div class="rcp-serial" id="rd-serial-box">
+                            <i class="fas fa-barcode"></i> <span id="rd-serial">—</span>
+                        </div>
+                        <button class="btn-connect disconnect" id="btn-disconnect" style="display: none;"
+                            onclick="window.location.href='/configuracion'">
+                            <i class="fas fa-unlink"></i> Desconectar
+                        </button>
+                    </div>
+
+                    <button class="btn-connect" id="btn-connect" onclick="window.location.href='/configuracion'">
+                        <i class="fas fa-plug"></i> Configurar Router
+                    </button>
+                </div>
+
+                <div class="sidebar-copy">&copy; 2026 VoucherForge Pro — KJ</div>
+
+                <!-- CPU/Memory Footer Meters -->
+                <div class="sidebar-bottom-meters" id="sidebar-bottom-meters" style="display: none;">
+                    <div class="sbm-item">
+                        <div class="sbm-ring" id="cpu-ring" data-percent="0"
+                            style="--ring-val: 0; --ring-color: var(--primary-light);">
+                            <span class="sbm-percent" id="cpu-percent">0%</span>
+                        </div>
+                        <div class="sbm-labels">
+                            <span class="sbm-icon"><i class="fas fa-microchip"></i> CPU</span>
+                            <span class="sbm-sub" id="cpu-freq">—</span>
+                        </div>
+                    </div>
+                    <div class="sbm-item">
+                        <div class="sbm-ring" id="mem-ring" data-percent="0"
+                            style="--ring-val: 0; --ring-color: var(--cyan);">
+                            <span class="sbm-percent" id="mem-percent">0%</span>
+                        </div>
+                        <div class="sbm-labels">
+                            <span class="sbm-icon"><i class="fas fa-memory"></i> RAM</span>
+                            <span class="sbm-sub" id="mem-detail">— MB</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sidebar-uptime" id="sidebar-uptime" style="display: none;">
+                    <div class="uptime-dot"></div>
+                    <span>Uptime</span>
+                    <strong id="rd-uptime">—</strong>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ==================== MAIN CONTENT ==================== -->
+        <main class="main-content">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script>
+        // ======================== TOAST NOTIFICATIONS ========================
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            const icons = { success: 'fa-check-circle', error: 'fa-times-circle', info: 'fa-info-circle', warning: 'fa-exclamation-triangle' };
+            toast.innerHTML = `<i class="fas ${icons[type] || icons.info}"></i> ${message}`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 5200);
+        }
+
+        // ======================== MIKROTIK STATUS CHECK ========================
+        let _prevStatus = null;
+        function checkMikroTikStatus() {
+            $.get('/api/mikrotik/status', function (data) {
+                const dot = $('#mt-status');
+                const text = $('#router-status-text');
+
+                if (data.status === 'online') {
+                    dot.removeClass('offline').addClass('online');
+                    text.text('Conectado').css('color', 'var(--success)');
+                    $('#router-panel').addClass('connected');
+                    $('#btn-connect').hide();
+                    $('#btn-disconnect').show();
+
+                    if (_prevStatus !== 'online') {
+                        showToast('Router MikroTik conectado correctamente.', 'success');
+                        _prevStatus = 'online';
+                    }
+
+                    $.get('/api/mikrotik/resources', function (res) {
+                        if (res.success) {
+                            $('#router-details, #router-meters, #sidebar-bottom-meters, #sidebar-uptime').show();
+                            $('#rd-host').text(res.host || '—');
+                            $('#rd-device').text(res.board || '—');
+                            $('#rd-version').text(res.version || '—');
+                            $('#rd-serial').text(res.serial || '—');
+                            $('#rd-uptime').text(res.uptime || '—');
+
+                            // CPU Ring
+                            var cpuLoad = parseInt(res.cpu_load) || 0;
+                            $('#cpu-percent').text(cpuLoad + '%');
+                            $('#cpu-ring').css('--ring-val', cpuLoad);
+                            var cpuColor = cpuLoad > 80 ? 'var(--danger)' : cpuLoad > 50 ? 'var(--warning)' : 'var(--primary-light)';
+                            $('#cpu-ring').css('--ring-color', cpuColor);
+                            if (res.cpu_frequency) $('#cpu-freq').text(res.cpu_frequency + ' MHz');
+
+                            // Memory Ring
+                            var memUsed = res.total_memory > 0 ? Math.round(((res.total_memory - res.free_memory) / res.total_memory) * 100) : 0;
+                            var usedMB = Math.round((res.total_memory - res.free_memory) / 1048576);
+                            var totalMB = Math.round(res.total_memory / 1048576);
+                            $('#mem-percent').text(memUsed + '%');
+                            $('#mem-ring').css('--ring-val', memUsed);
+                            var memColor = memUsed > 85 ? 'var(--danger)' : memUsed > 60 ? 'var(--warning)' : 'var(--cyan)';
+                            $('#mem-ring').css('--ring-color', memColor);
+                            $('#mem-detail').text(usedMB + '/' + totalMB + ' MB');
+                        }
+                    });
+                } else {
+                    dot.removeClass('online').addClass('offline');
+                    text.text(data.status === 'no_config' ? 'Sin Configurar' : 'Desconectado').css('color', 'var(--danger)');
+                    $('#router-panel').removeClass('connected');
+                    $('#router-details, #router-meters, #sidebar-bottom-meters, #sidebar-uptime').hide();
+                    $('#btn-connect').show();
+                    $('#btn-disconnect').hide();
+
+                    if (_prevStatus === 'online') {
+                        showToast('Se perdió la conexión con el router.', 'error');
+                    }
+                    _prevStatus = data.status;
+                }
+            }).fail(function () {
+                if (_prevStatus !== 'fail') {
+                    _prevStatus = 'fail';
+                }
+            });
+        }
+
+        setInterval(checkMikroTikStatus, 8000);
+        checkMikroTikStatus();
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>

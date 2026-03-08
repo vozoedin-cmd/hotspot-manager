@@ -1,0 +1,303 @@
+{% extends 'layout.html' %}
+{% block title %}Dashboard — VoucherForge Pro{% endblock %}
+
+{% block content %}
+<header class="header">
+    <div>
+        <h1><i class="fas fa-chart-pie"
+                style="color: var(--primary-light); margin-right: 8px; font-size: 1.2rem;"></i>Dashboard de Negocio</h1>
+        <p>Supervise el rendimiento de ventas, gestione su inventario de vouchers y monitoree sus routers en tiempo
+            real.</p>
+    </div>
+    <div style="display: flex; gap: 8px;">
+        <button class="btn btn-secondary" onclick="location.reload()"><i class="fas fa-sync-alt"></i>
+            Actualizar</button>
+        <button class="btn btn-primary" onclick="window.location.href='/fichas'"><i class="fas fa-plus"></i> Nuevo
+            Lote</button>
+    </div>
+</header>
+
+<!-- ==================== FILTROS DE PERÍODO ==================== -->
+<div class="period-filter">
+    <button class="period-btn active" onclick="setPeriod(this, 'todo')">Todo</button>
+    <button class="period-btn" onclick="setPeriod(this, 'hoy')">Hoy</button>
+    <button class="period-btn" onclick="setPeriod(this, '7dias')">Últimos 7 Días</button>
+    <button class="period-btn" onclick="setPeriod(this, 'mes')">Este Mes</button>
+    <div style="margin-left: auto; display: flex; gap: 6px; align-items: center;">
+        <input type="date" class="period-date" id="date-from">
+        <span class="period-separator">→</span>
+        <input type="date" class="period-date" id="date-to">
+    </div>
+</div>
+
+<!-- ==================== ESTADÍSTICAS PRINCIPALES ==================== -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon green"><i class="fas fa-dollar-sign"></i></div>
+        <span class="stat-label">Ingresos Realizados</span>
+        <span class="stat-value">{{ "%.2f"|format(stats.ingresos) }} Q</span>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon purple"><i class="fas fa-receipt"></i></div>
+        <span class="stat-label">Vouchers Vendidos</span>
+        <span class="stat-value">{{ stats.fichas_vendidas }}</span>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon blue"><i class="fas fa-trophy"></i></div>
+        <span class="stat-label">Plan Más Rentable</span>
+        <span class="stat-value" style="font-size: 1rem;">{{ stats.plan_rentable if stats.plan_rentable else '—'
+            }}</span>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon orange"><i class="fas fa-fire"></i></div>
+        <span class="stat-label">Plan Más Popular</span>
+        <span class="stat-value" style="font-size: 1rem;">{{ stats.plan_popular if stats.plan_popular else '—' }}</span>
+    </div>
+</div>
+
+<div class="stats-grid" style="grid-template-columns: repeat(3, 1fr);">
+    <div class="stat-card">
+        <div class="stat-icon blue"><i class="fas fa-database"></i></div>
+        <span class="stat-label">Inventario Total</span>
+        <span class="stat-value">{{ stats.total_fichas }}</span>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon green"><i class="fas fa-wifi"></i></div>
+        <span class="stat-label">Usuarios en Línea</span>
+        <span class="stat-value" id="active-count">{{ stats.active }}</span>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon cyan"><i class="fas fa-box-open"></i></div>
+        <span class="stat-label">Fichas Disponibles</span>
+        <span class="stat-value">{{ stats.fichas_disponibles }}</span>
+    </div>
+</div>
+
+<!-- ==================== ESTADÍSTICAS POR SERVIDOR ==================== -->
+<div class="server-stats-section">
+    <h3 class="server-stats-title"><i class="fas fa-server"
+            style="color: var(--primary-light); margin-right: 6px;"></i>Estadísticas por Servidor Hotspot</h3>
+    {% for srv in hotspot_servers %}
+    <div class="server-row">
+        <div class="srv-icon"><i class="fas fa-server"></i></div>
+        <span class="srv-name">{{ srv.name }}</span>
+        <div class="srv-stat">
+            <i class="fas fa-users"></i> <span class="srv-users">{{ srv.get('invalid', '0') }}</span>
+            <i class="fas fa-ethernet" style="margin-left: 10px;"></i>
+            <span>{{ srv.get('interface', '—') }}</span>
+        </div>
+    </div>
+    {% endfor %}
+    {% if not hotspot_servers %}
+    <div class="server-row" style="justify-content: center; color: var(--secondary); font-size: 0.78rem;">
+        <i class="fas fa-plug" style="opacity: 0.5; margin-right: 8px;"></i>
+        Conecte un router para ver los servidores Hotspot
+    </div>
+    {% endif %}
+</div>
+
+<!-- ==================== GRID: ACCIONES + CONFIG  |  HISTORIAL + LOGS ==================== -->
+<div class="dashboard-3col">
+    <div class="dash-main">
+        <div class="dashboard-grid">
+            <!-- Acciones Rápidas -->
+            <div class="section-box">
+                <h3 class="section-title"><i class="fas fa-bolt"></i> Acciones Rápidas</h3>
+                <div class="quick-actions">
+                    <button class="action-btn action-green" onclick="window.location.href='/fichas'">
+                        <i class="fas fa-plus-circle"></i>
+                        <span>Nuevo Lote de<br>Vouchers</span>
+                    </button>
+                    <button class="action-btn action-orange" onclick="optimizarFichas()">
+                        <i class="fas fa-magic"></i>
+                        <span>Optimizar<br>Inventario</span>
+                    </button>
+                    <button class="action-btn action-blue" onclick="bloquearTethering()">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>Anti-Tethering<br>Firewall</span>
+                    </button>
+                    <button class="action-btn action-purple" onclick="window.location.href='/planes'">
+                        <i class="fas fa-layer-group"></i>
+                        <span>Gestionar<br>Perfiles & Planes</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Configuración y Respaldo -->
+            <div class="config-backup-box">
+                <h3 class="section-title"><i class="fas fa-shield-alt"></i> Configuración y Respaldo</h3>
+                <div class="config-field">
+                    <label>Nombre del Negocio</label>
+                    <input type="text" value="{{ config.host if config else 'Mi Red WiFi' }}" id="business-name"
+                        placeholder="Nombre de su negocio">
+                </div>
+                <div class="config-field">
+                    <label>Moneda de Facturación</label>
+                    <select id="currency">
+                        <option>Quetzal Guatemalteco (Q)</option>
+                        <option>Dólar Americano ($)</option>
+                        <option>Peso Mexicano (MXN)</option>
+                    </select>
+                </div>
+                <button class="btn-backup" onclick="crearBackup()">
+                    <i class="fas fa-download"></i> Crear Copia de Seguridad
+                </button>
+                <div class="btn-backup-note">Exportar toda la configuración y datos de vouchers.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel Derecho -->
+    <div class="dash-side">
+        <!-- Historial de Lotes -->
+        <div class="lotes-panel">
+            <div class="lotes-panel-header">
+                <h3><i class="fas fa-history" style="color: var(--primary-light); margin-right: 6px;"></i>Historial de
+                    Lotes</h3>
+                <select id="server-filter">
+                    <option>Todos</option>
+                    {% for srv in hotspot_servers %}
+                    <option>{{ srv.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <input type="text" class="lotes-search" placeholder="🔍 Buscar por nombre de perfil o ID..."
+                id="lotes-search-input">
+
+            <div class="lotes-list" id="lotes-list">
+                {% for lote in lotes %}
+                <div class="lote-card">
+                    <div class="lc-top">
+                        <span class="lc-plan">{{ lote.perfil }} (x{{ lote.cantidad }}) <span class="lc-id">{{
+                                lote.id_lote[:8] }}</span></span>
+                        <button class="lc-delete" onclick="deleteLote({{ lote.id }})"><i
+                                class="fas fa-trash"></i></button>
+                    </div>
+                    <div class="lc-meta">
+                        <span>Servidor: <strong>{{ lote.servidor }}</strong></span>
+                        <span>{{ lote.fecha.strftime('%d/%m/%Y, %I:%M %p') if lote.fecha else '' }}</span>
+                    </div>
+                    <button class="btn-manage" onclick="window.location.href='/fichas?lote={{ lote.id_lote }}'">
+                        <i class="fas fa-list-ul"></i> Gestionar ({{ lote.vendidos }}/{{ lote.cantidad }} Vendidos)
+                    </button>
+                </div>
+                {% endfor %}
+                {% if not lotes %}
+                <div style="text-align: center; padding: 40px 20px; color: var(--secondary); font-size: 0.78rem;">
+                    <i class="fas fa-inbox"
+                        style="font-size: 2rem; display: block; margin-bottom: 12px; opacity: 0.2;"></i>
+                    No hay lotes generados aún.<br>
+                    <a href="/fichas"
+                        style="color: var(--primary-light); text-decoration: none; font-weight: 600;">Crear primer lote
+                        →</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Registro de Sistema -->
+        <div class="log-panel">
+            <h3><i class="fas fa-terminal" style="color: var(--primary-light); margin-right: 6px;"></i>Registro de
+                Sistema</h3>
+            <div class="log-list" id="system-log">
+                <div class="log-entry">
+                    <div class="log-dot green"></div>
+                    <span class="log-text">VoucherForge Pro v7 iniciado correctamente.</span>
+                    <span class="log-time">{{ now.strftime('%I:%M:%S %p') if now else '' }}</span>
+                </div>
+                {% if hotspot_servers %}
+                <div class="log-entry">
+                    <div class="log-dot green"></div>
+                    <span class="log-text">{{ hotspot_servers|length }} servidor(es) Hotspot detectado(s).</span>
+                    <span class="log-time">{{ now.strftime('%I:%M:%S %p') if now else '' }}</span>
+                </div>
+                {% endif %}
+                <div class="log-entry">
+                    <div class="log-dot blue"></div>
+                    <span class="log-text">Base de datos: {{ stats.total_fichas }} fichas registradas.</span>
+                    <span class="log-time">{{ now.strftime('%I:%M:%S %p') if now else '' }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function setPeriod(btn, period) {
+        document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        showToast(`Filtro cambiado: ${btn.textContent.trim()}`, 'info');
+    }
+
+    function addSystemLog(msg, type) {
+        const log = document.getElementById('system-log');
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+        const dotColor = type === 'ok' ? 'green' : (type === 'error' ? 'red' : (type === 'warn' ? 'yellow' : 'blue'));
+        const time = new Date().toLocaleTimeString('es-GT');
+        entry.innerHTML = `<div class="log-dot ${dotColor}"></div><span class="log-text">${msg}</span><span class="log-time">${time}</span>`;
+        log.prepend(entry);
+    }
+
+    function optimizarFichas() {
+        showToast('Optimización de inventario iniciada...', 'info');
+        addSystemLog('Analizando fichas disponibles para optimización...', 'info');
+    }
+
+    function bloquearTethering() {
+        showToast('Verificando reglas anti-tethering en MikroTik...', 'info');
+        addSystemLog('Anti-Tethering Firewall: verificando reglas activas...', 'info');
+    }
+
+    function crearBackup() {
+        showToast('Generando copia de seguridad...', 'info');
+        addSystemLog('Backup: exportando base de datos y configuración...', 'info');
+        // Disparar descarga del archivo JSON
+        const link = document.createElement('a');
+        link.href = '/api/backup';
+        link.download = '';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => {
+            addSystemLog('Backup completado y descargado.', 'ok');
+        }, 1200);
+    }
+
+    function deleteLote(id) {
+        if (!confirm('¿Eliminar este lote y todas sus fichas? Esta acción también eliminará los usuarios en MikroTik.')) return;
+        showToast('Eliminando lote...', 'warning');
+        fetch(`/api/lotes/${id}`, { method: 'DELETE' })
+            .then(r => r.json())
+            .then(res => {
+                if (res.success) {
+                    showToast(`Lote eliminado. ${res.eliminadas} fichas borradas.`, 'success');
+                    addSystemLog(`Lote eliminado: ${res.eliminadas} fichas removidas.`, 'ok');
+                    setTimeout(() => location.reload(), 1200);
+                } else {
+                    showToast('Error al eliminar el lote.', 'error');
+                }
+            })
+            .catch(() => showToast('Error de comunicación al eliminar.', 'error'));
+    }
+
+    // Search lotes
+    document.getElementById('lotes-search-input').addEventListener('input', function () {
+        const query = this.value.toLowerCase();
+        document.querySelectorAll('.lote-card').forEach(card => {
+            card.style.display = card.textContent.toLowerCase().includes(query) ? 'block' : 'none';
+        });
+    });
+
+    // Auto-refresh active users count  
+    setInterval(function () {
+        $.get('/api/mikrotik/status', function (data) {
+            if (data.status === 'online') {
+                // Could add active user count refresh here
+            }
+        });
+    }, 15000);
+</script>
+{% endblock %}
