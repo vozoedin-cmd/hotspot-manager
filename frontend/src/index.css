@@ -13,13 +13,34 @@
     background-attachment: fixed;
   }
   select {
-    @apply bg-gray-800 border-gray-600 text-gray-100;
+    @apply bg-gray-800/80 border-gray-600 text-gray-100 backdrop-blur-md;
   }
   thead {
-    @apply bg-gray-800/60 backdrop-blur-md;
+    @apply bg-gray-800/60 backdrop-blur-md text-gray-200;
   }
   tbody tr {
-    @apply border-gray-700/50 hover:bg-white/5 transition-colors;
+    @apply border-gray-700/50 hover:bg-white/5 transition-colors text-gray-300;
+  }
+  
+  /* OVERRIDES PARA ARREGLAR EL CONTRASTE Y EFECTO CRISTAL DE LAS TARJETAS */
+  .dark .bg-gray-800 {
+    background-color: rgba(26, 35, 58, 0.45) !important;
+    backdrop-filter: blur(12px) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37) !important;
+  }
+  .dark .border-gray-700 {
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
+  .dark .text-gray-500 {
+    color: #e5e7eb !important; /* Super bright (normally gray-200) */
+  }
+  .dark .text-gray-400 {
+    color: #f3f4f6 !important; /* Almost white (normally gray-100) */
+  }
+  .dark .bg-gray-900 {
+    /* Prevent default background color since we use a radial gradient in body */
+    background-color: transparent !important;
   }
 }
 
