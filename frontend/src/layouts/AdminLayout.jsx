@@ -10,7 +10,6 @@ import { sellersApi } from '../services/api';
 import toast from 'react-hot-toast';
 import useSocket from '../hooks/useSocket';
 import NotificationBell from '../components/NotificationBell';
-import NotificationBell from '../components/NotificationBell';
 const navItems = [
   { to: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
   { to: '/admin/vouchers', icon: Ticket, label: 'Fichas' },
