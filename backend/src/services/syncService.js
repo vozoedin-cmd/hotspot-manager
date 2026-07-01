@@ -130,13 +130,13 @@ class SyncService {
             };
           }
         } else if (voucher.status === 'active') {
-          // Estaba activo pero ya no lo está (se desconectó - no necesariamente expiró)
-          const mtUser = allMikrotikUsers.find(u => u.name === voucher.code);
-          if (mtUser && mtUser.disabled === 'true') {
-            newStatus = 'used';
-            updateData = { status: 'used', used_at: new Date() };
-            changes.push({ type: 'used', voucher: voucher.code, device: device.name });
-          }
+          // Estaba activo en nuestro panel pero ya NO está en la lista de activos de MikroTik.
+          // Esto significa que expiró (limit-uptime alcanzado), se desconectó, o fue removido.
+          // En cualquier caso, la ficha ya fue consumida → marcar como 'used'.
+          newStatus = 'used';
+          updateData = { status: 'used', used_at: new Date() };
+          changes.push({ type: 'used', voucher: voucher.code, device: device.name });
+          logger.info(`Ficha ${voucher.code} marcada como usada (ya no está activa en MikroTik ${device.name})`);
         }
 
         if (Object.keys(updateData).length > 0) {
