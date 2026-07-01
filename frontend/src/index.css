@@ -7,53 +7,52 @@
     box-sizing: border-box;
   }
   body {
-    /* Starlink style: stark black */
-    @apply font-sans text-gray-100 bg-darkbg;
+    @apply font-sans text-gray-900 dark:text-cuzo-text bg-gray-50 dark:bg-darkbg;
   }
   select {
-    @apply bg-darkpanel border-darkborder text-gray-100;
+    @apply bg-white dark:bg-darkpanel border-gray-300 dark:border-darkborder text-gray-900 dark:text-cuzo-text rounded-md;
   }
   thead {
-    @apply bg-darkpanel text-gray-200;
+    @apply bg-gray-50 dark:bg-darkpanel text-gray-700 dark:text-cuzo-textMuted;
   }
   tbody tr {
-    @apply border-darkborder hover:bg-white/5 transition-colors text-gray-300;
+    @apply border-gray-200 dark:border-darkborder hover:bg-gray-50 dark:hover:bg-white/5 transition-colors text-gray-700 dark:text-cuzo-text;
   }
   
-  /* STARLINK OVERRIDES */
+  /* CUZONET GLOBALS */
   .dark .bg-gray-800 {
-    background-color: #111111 !important;
-    border-color: #333333 !important;
-    box-shadow: none !important;
+    background-color: #111827 !important;
+    border-color: #1F2937 !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2) !important;
   }
   .dark .border-gray-700 {
-    border-color: #333333 !important;
+    border-color: #1F2937 !important;
   }
   .dark .text-gray-500 {
-    color: #A3A3A3 !important; /* Muted gray for subtitles */
+    color: #94A3B8 !important; /* cuzo-textMuted */
   }
   .dark .text-gray-400 {
-    color: #CCCCCC !important; /* Brighter gray for lists */
+    color: #F8FAFC !important; /* cuzo-text */
   }
   .dark .bg-gray-900 {
-    background-color: #000000 !important;
+    background-color: #0B1220 !important;
   }
 }
 
 @layer components {
-  /* Starlink utilities */
-  .glass-panel, .starlink-panel {
-    @apply bg-darkpanel border border-darkborder;
+  /* CuzoNet utilities */
+  .glass-panel, .starlink-panel, .cuzo-panel {
+    @apply bg-white dark:bg-darkpanel border border-gray-200 dark:border-darkborder shadow-sm;
   }
-  .glass-card, .starlink-card {
-    @apply bg-darkpanel border border-darkborder rounded-none; /* Starlink often uses sharp corners, or minimal rounding */
+  .glass-card, .starlink-card, .cuzo-card {
+    @apply bg-white dark:bg-darkpanel border border-gray-200 dark:border-darkborder rounded-xl shadow-md;
   }
   .text-gradient-cyan {
-    @apply text-white;
+    @apply text-primary-600 dark:text-primary-400;
   }
 
   .btn-primary {
-    @apply bg-white hover:bg-gray-200 text-black font-semibold py-2 px-6 rounded-none transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider text-sm;
+    @apply bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg;
   }
   .btn-secondary {
     @apply bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg transition-colors duration-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200;

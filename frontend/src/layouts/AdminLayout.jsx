@@ -3,9 +3,10 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard, Ticket, Package, Users, Router,
-  BarChart3, ShieldCheck, LogOut, Menu, X, Wifi, Wallet, Settings
+  BarChart3, ShieldCheck, LogOut, Menu, X, Wifi, Wallet, Settings, Sun, Moon
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
+import useThemeStore from '../store/themeStore';
 import { sellersApi } from '../services/api';
 import toast from 'react-hot-toast';
 import useSocket from '../hooks/useSocket';
@@ -25,6 +26,7 @@ const navItems = [
 export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, logout } = useAuthStore();
+  const { isDark, toggle: toggleTheme } = useThemeStore();
   const navigate = useNavigate();
   useSocket(user);
 
@@ -49,8 +51,8 @@ export default function AdminLayout() {
           <Wifi className="w-6 h-6 text-primary-400" />
         </div>
         <div>
-          <h1 className="text-white font-bold text-base leading-tight">HotspotManager</h1>
-          <p className="text-primary-300 text-xs">Panel Administrador</p>
+          <h1 className="text-gray-900 dark:text-white font-bold text-base leading-tight">HotspotManager</h1>
+          <p className="text-gray-500 dark:text-gray-400 text-xs">Panel Administrador</p>
         </div>
       </div>
 
@@ -63,10 +65,10 @@ export default function AdminLayout() {
             end={exact}
             onClick={() => setSidebarOpen(false)}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-300 ${
+              `flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-all duration-200 ${
                 isActive
-                  ? 'bg-primary-500/20 text-primary-400 font-semibold shadow-glow-cyan border border-primary-500/30'
-                  : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                  ? 'bg-gradient-to-r from-blue-600/20 to-blue-500/10 text-blue-500 dark:text-blue-400 border-l-2 border-blue-500'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'
               }`
             }
           >
@@ -81,21 +83,26 @@ export default function AdminLayout() {
         ))}
       </nav>
 
-      {/* User */}
-      <div className="px-3 pb-4 border-t border-glassBorder pt-4">
+      <div className="px-3 pb-4 border-t border-gray-200 dark:border-darkborder pt-4">
         <div className="flex items-center gap-3 px-3 py-2 mb-1">
-          <div className="w-8 h-8 rounded-full bg-primary-500/20 flex items-center justify-center text-primary-400 font-semibold text-sm flex-shrink-0 shadow-glow-cyan">
+          <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 font-semibold text-sm flex-shrink-0">
             {user?.name?.charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-white text-sm font-medium truncate">{user?.name}</p>
-            <p className="text-gray-400 text-xs truncate">{user?.email}</p>
+            <p className="text-gray-900 dark:text-white text-sm font-medium truncate">{user?.name}</p>
+            <p className="text-gray-500 dark:text-gray-400 text-xs truncate">{user?.email}</p>
           </div>
+          <button
+            onClick={toggleTheme}
+            className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+          >
+            {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+          </button>
           <NotificationBell />
         </div>
         <button
           onClick={handleLogout}
-          className="flex items-center gap-2 w-full px-3 py-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg text-sm transition-colors"
+          className="flex items-center gap-2 w-full px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-white/5 rounded-lg text-sm transition-colors"
         >
           <LogOut className="w-4 h-4" />
           Cerrar sesión
@@ -135,9 +142,15 @@ export default function AdminLayout() {
             <Menu className="w-6 h-6 text-white" />
           </button>
           <div className="flex items-center gap-2 flex-1">
-            <Wifi className="w-5 h-5 text-white" />
-            <span className="font-semibold text-white">HotspotManager</span>
+            <Wifi className="w-5 h-5 text-gray-900 dark:text-white" />
+            <span className="font-semibold text-gray-900 dark:text-white">HotspotManager</span>
           </div>
+          <button
+            onClick={toggleTheme}
+            className="p-1.5 text-gray-500 dark:text-gray-400 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+          >
+            {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+          </button>
           <NotificationBell />
         </header>
 

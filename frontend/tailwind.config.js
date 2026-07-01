@@ -8,30 +8,27 @@ export default {
         sans: ['Inter', 'sans-serif'],
       },
       colors: {
-        darkbg: '#000000',
-        darkpanel: '#111111',
-        darkborder: '#333333',
+        darkbg: '#0B1220',
+        darkpanel: '#111827',
+        darkborder: '#1F2937',
         primary: {
-          50: '#f9fafb',
-          100: '#f3f4f6',
-          200: '#e5e7eb',
-          300: '#d1d5db',
-          400: '#9ca3af',
-          500: '#ffffff', /* Primary is stark white */
-          600: '#e5e5e5',
-          700: '#cccccc',
-          800: '#999999',
-          900: '#666666',
+          50: '#eff6ff',
+          100: '#dbeafe',
+          200: '#bfdbfe',
+          300: '#93c5fd',
+          400: '#60a5fa',
+          500: '#3b82f6',
+          600: '#2563eb',
+          700: '#1d4ed8',
+          800: '#1e40af',
+          900: '#1e3a8a',
         },
-        secondary: {
-          500: '#A3A3A3',
+        cuzo: {
+          text: '#F8FAFC',
+          textMuted: '#94A3B8',
+          sidebar: '#0F172A',
         }
-      },
-      boxShadow: {
-        'glow-cyan': 'none',
-        'glow-blue': 'none',
-        'glass': 'none',
-      },
+      }
     },
   },
   plugins: [],
