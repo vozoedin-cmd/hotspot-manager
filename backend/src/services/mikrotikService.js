@@ -70,6 +70,11 @@ class MikrotikService {
       const users = await conn.write('/ip/hotspot/user/print');
       return users;
     } catch (error) {
+      // MikroTik responde '!empty' cuando no hay usuarios → devolver array vacío
+      if (error.errno === 'UNKNOWNREPLY' || error.message?.includes('!empty')) {
+        logger.info(`Sin usuarios hotspot en ${device.name} (respuesta vacía)`);
+        return [];
+      }
       logger.error(`Error obteniendo usuarios hotspot de ${device.name}: ${error.message}`);
       throw error;
     }
@@ -84,6 +89,11 @@ class MikrotikService {
       const active = await conn.write('/ip/hotspot/active/print');
       return active;
     } catch (error) {
+      // MikroTik responde '!empty' cuando no hay sesiones activas → devolver array vacío
+      if (error.errno === 'UNKNOWNREPLY' || error.message?.includes('!empty')) {
+        logger.info(`Sin usuarios activos en ${device.name} (respuesta vacía)`);
+        return [];
+      }
       logger.error(`Error obteniendo usuarios activos de ${device.name}: ${error.message}`);
       throw error;
     }
