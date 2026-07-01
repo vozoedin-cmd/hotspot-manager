@@ -7,57 +7,53 @@
     box-sizing: border-box;
   }
   body {
-    /* Forcing a dark gradient background universally */
-    @apply font-sans text-gray-100;
-    background: radial-gradient(circle at top right, #111a30, #0B0F19 50%, #06080d);
-    background-attachment: fixed;
+    /* Starlink style: stark black */
+    @apply font-sans text-gray-100 bg-darkbg;
   }
   select {
-    @apply bg-gray-800/80 border-gray-600 text-gray-100 backdrop-blur-md;
+    @apply bg-darkpanel border-darkborder text-gray-100;
   }
   thead {
-    @apply bg-gray-800/60 backdrop-blur-md text-gray-200;
+    @apply bg-darkpanel text-gray-200;
   }
   tbody tr {
-    @apply border-gray-700/50 hover:bg-white/5 transition-colors text-gray-300;
+    @apply border-darkborder hover:bg-white/5 transition-colors text-gray-300;
   }
   
-  /* OVERRIDES PARA ARREGLAR EL CONTRASTE Y EFECTO CRISTAL DE LAS TARJETAS */
+  /* STARLINK OVERRIDES */
   .dark .bg-gray-800 {
-    background-color: rgba(26, 35, 58, 0.45) !important;
-    backdrop-filter: blur(12px) !important;
-    border-color: rgba(255, 255, 255, 0.08) !important;
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37) !important;
+    background-color: #111111 !important;
+    border-color: #333333 !important;
+    box-shadow: none !important;
   }
   .dark .border-gray-700 {
-    border-color: rgba(255, 255, 255, 0.08) !important;
+    border-color: #333333 !important;
   }
   .dark .text-gray-500 {
-    color: #e5e7eb !important; /* Super bright (normally gray-200) */
+    color: #A3A3A3 !important; /* Muted gray for subtitles */
   }
   .dark .text-gray-400 {
-    color: #f3f4f6 !important; /* Almost white (normally gray-100) */
+    color: #CCCCCC !important; /* Brighter gray for lists */
   }
   .dark .bg-gray-900 {
-    /* Prevent default background color since we use a radial gradient in body */
-    background-color: transparent !important;
+    background-color: #000000 !important;
   }
 }
 
 @layer components {
-  /* Glassmorphism utilities */
-  .glass-panel {
-    @apply bg-glass backdrop-blur-xl border border-glassBorder shadow-glass;
+  /* Starlink utilities */
+  .glass-panel, .starlink-panel {
+    @apply bg-darkpanel border border-darkborder;
   }
-  .glass-card {
-    @apply bg-glass backdrop-blur-md border border-glassBorder shadow-glass rounded-2xl;
+  .glass-card, .starlink-card {
+    @apply bg-darkpanel border border-darkborder rounded-none; /* Starlink often uses sharp corners, or minimal rounding */
   }
   .text-gradient-cyan {
-    @apply text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-secondary-500;
+    @apply text-white;
   }
 
   .btn-primary {
-    @apply bg-primary-500 hover:bg-primary-400 text-darkbg font-bold py-2 px-4 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-glow-cyan hover:shadow-[0_0_25px_rgba(0,240,255,0.6)] hover:-translate-y-0.5;
+    @apply bg-white hover:bg-gray-200 text-black font-semibold py-2 px-6 rounded-none transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider text-sm;
   }
   .btn-secondary {
     @apply bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg transition-colors duration-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200;
