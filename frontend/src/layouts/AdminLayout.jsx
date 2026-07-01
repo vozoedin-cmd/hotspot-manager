@@ -3,15 +3,14 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard, Ticket, Package, Users, Router,
-  BarChart3, ShieldCheck, LogOut, Menu, X, Wifi, Wallet, Settings, Sun, Moon,
+  BarChart3, ShieldCheck, LogOut, Menu, X, Wifi, Wallet, Settings
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import { sellersApi } from '../services/api';
 import toast from 'react-hot-toast';
 import useSocket from '../hooks/useSocket';
 import NotificationBell from '../components/NotificationBell';
-import useThemeStore from '../store/themeStore';
-
+import NotificationBell from '../components/NotificationBell';
 const navItems = [
   { to: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
   { to: '/admin/vouchers', icon: Ticket, label: 'Fichas' },
@@ -28,7 +27,6 @@ export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
-  const { isDark, toggle: toggleTheme } = useThemeStore();
   useSocket(user);
 
   const { data: countData } = useQuery({
@@ -47,13 +45,13 @@ export default function AdminLayout() {
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
       {/* Logo */}
-      <div className="flex items-center gap-3 px-6 py-5 border-b border-blue-700">
-        <div className="bg-white/10 p-2 rounded-lg">
-          <Wifi className="w-6 h-6 text-white" />
+      <div className="flex items-center gap-3 px-6 py-5 border-b border-glassBorder">
+        <div className="bg-primary-500/20 p-2 rounded-lg shadow-glow-cyan">
+          <Wifi className="w-6 h-6 text-primary-400" />
         </div>
         <div>
           <h1 className="text-white font-bold text-base leading-tight">HotspotManager</h1>
-          <p className="text-blue-200 text-xs">Panel Administrador</p>
+          <p className="text-primary-300 text-xs">Panel Administrador</p>
         </div>
       </div>
 
@@ -66,10 +64,10 @@ export default function AdminLayout() {
             end={exact}
             onClick={() => setSidebarOpen(false)}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150 ${
+              `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-300 ${
                 isActive
-                  ? 'bg-white/15 text-white font-semibold'
-                  : 'text-blue-100 hover:bg-white/10 hover:text-white'
+                  ? 'bg-primary-500/20 text-primary-400 font-semibold shadow-glow-cyan border border-primary-500/30'
+                  : 'text-gray-400 hover:bg-white/5 hover:text-white'
               }`
             }
           >
@@ -85,50 +83,43 @@ export default function AdminLayout() {
       </nav>
 
       {/* User */}
-      <div className="px-3 pb-4 border-t border-blue-700 pt-4">
+      <div className="px-3 pb-4 border-t border-glassBorder pt-4">
         <div className="flex items-center gap-3 px-3 py-2 mb-1">
-          <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+          <div className="w-8 h-8 rounded-full bg-primary-500/20 flex items-center justify-center text-primary-400 font-semibold text-sm flex-shrink-0 shadow-glow-cyan">
             {user?.name?.charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-white text-sm font-medium truncate">{user?.name}</p>
-            <p className="text-blue-200 text-xs truncate">{user?.email}</p>
+            <p className="text-gray-400 text-xs truncate">{user?.email}</p>
           </div>
           <NotificationBell />
         </div>
         <button
           onClick={handleLogout}
-          className="flex items-center gap-2 w-full px-3 py-2 text-blue-100 hover:text-white hover:bg-white/10 rounded-lg text-sm transition-colors"
+          className="flex items-center gap-2 w-full px-3 py-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg text-sm transition-colors"
         >
           <LogOut className="w-4 h-4" />
           Cerrar sesión
-        </button>
-        <button
-          onClick={toggleTheme}
-          className="flex items-center gap-2 w-full px-3 py-2 text-blue-100 hover:text-white hover:bg-white/10 rounded-lg text-sm transition-colors mt-1"
-        >
-          {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          {isDark ? 'Modo claro' : 'Modo oscuro'}
         </button>
       </div>
     </div>
   );
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
+    <div className="flex h-screen overflow-hidden">
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex flex-col w-64 bg-blue-800 flex-shrink-0">
+      <aside className="hidden lg:flex flex-col w-64 glass-panel border-r border-y-0 border-l-0 flex-shrink-0 z-10">
         <SidebarContent />
       </aside>
 
       {/* Mobile sidebar */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-50 flex lg:hidden">
-          <div className="fixed inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
-          <aside className="relative flex flex-col w-64 bg-blue-800">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
+          <aside className="relative flex flex-col w-64 glass-panel border-r border-y-0 border-l-0 z-10">
             <button
               onClick={() => setSidebarOpen(false)}
-              className="absolute top-4 right-4 text-white hover:text-blue-200"
+              className="absolute top-4 right-4 text-white hover:text-primary-300 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -138,9 +129,9 @@ export default function AdminLayout() {
       )}
 
       {/* Main */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative z-0">
         {/* Mobile header */}
-        <header className="lg:hidden bg-blue-800 border-b border-blue-700 px-4 py-3 flex items-center gap-3">
+        <header className="lg:hidden glass-panel border-b border-x-0 border-t-0 px-4 py-3 flex items-center gap-3">
           <button onClick={() => setSidebarOpen(true)}>
             <Menu className="w-6 h-6 text-white" />
           </button>

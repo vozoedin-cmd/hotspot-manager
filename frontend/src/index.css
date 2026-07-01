@@ -7,22 +7,36 @@
     box-sizing: border-box;
   }
   body {
-    @apply bg-gray-50 text-gray-900 font-sans dark:bg-gray-900 dark:text-gray-100;
+    /* Forcing a dark gradient background universally */
+    @apply font-sans text-gray-100;
+    background: radial-gradient(circle at top right, #111a30, #0B0F19 50%, #06080d);
+    background-attachment: fixed;
   }
   select {
-    @apply dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100;
+    @apply bg-gray-800 border-gray-600 text-gray-100;
   }
   thead {
-    @apply dark:bg-gray-800;
+    @apply bg-gray-800/60 backdrop-blur-md;
   }
   tbody tr {
-    @apply dark:border-gray-700;
+    @apply border-gray-700/50 hover:bg-white/5 transition-colors;
   }
 }
 
 @layer components {
+  /* Glassmorphism utilities */
+  .glass-panel {
+    @apply bg-glass backdrop-blur-xl border border-glassBorder shadow-glass;
+  }
+  .glass-card {
+    @apply bg-glass backdrop-blur-md border border-glassBorder shadow-glass rounded-2xl;
+  }
+  .text-gradient-cyan {
+    @apply text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-secondary-500;
+  }
+
   .btn-primary {
-    @apply bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply bg-primary-500 hover:bg-primary-400 text-darkbg font-bold py-2 px-4 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-glow-cyan hover:shadow-[0_0_25px_rgba(0,240,255,0.6)] hover:-translate-y-0.5;
   }
   .btn-secondary {
     @apply bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg transition-colors duration-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200;

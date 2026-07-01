@@ -1,25 +1,16 @@
 import { create } from 'zustand';
 
 const useThemeStore = create((set) => ({
-  isDark: false,
+  isDark: true, // Always true for Glassmorphism Cyan theme
 
   init: () => {
-    const saved = localStorage.getItem('theme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const isDark = saved ? saved === 'dark' : prefersDark;
-    if (isDark) document.documentElement.classList.add('dark');
-    else document.documentElement.classList.remove('dark');
-    set({ isDark });
+    document.documentElement.classList.add('dark');
+    set({ isDark: true });
   },
 
-  toggle: () =>
-    set((state) => {
-      const isDark = !state.isDark;
-      localStorage.setItem('theme', isDark ? 'dark' : 'light');
-      if (isDark) document.documentElement.classList.add('dark');
-      else document.documentElement.classList.remove('dark');
-      return { isDark };
-    }),
+  toggle: () => {
+    // Theme toggle disabled for this specific theme as it requires a dark background
+  },
 }));
 
 export default useThemeStore;
