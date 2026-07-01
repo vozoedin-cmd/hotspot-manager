@@ -30,7 +30,7 @@ class MikrotikService {
       password: device.password,
       port: device.port || 8728,
       timeout: parseInt(process.env.MIKROTIK_TIMEOUT) || 5000,
-      tls: device.use_ssl,
+      tls: device.use_ssl ? { rejectUnauthorized: false } : false,
       keepalive: true,
     });
 
