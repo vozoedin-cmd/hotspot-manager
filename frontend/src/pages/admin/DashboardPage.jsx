@@ -13,6 +13,7 @@ import {
   ResponsiveContainer, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip,
 } from 'recharts';
+import useThemeStore from '../../store/themeStore';
 
 const StatCard = ({ title, value, subtitle, icon: Icon, color = 'blue', loading }) => {
   const colors = {
@@ -60,8 +61,25 @@ const DeviceStatusBadge = ({ status }) => {
   );
 };
 
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white dark:bg-darkpanel border border-gray-200 dark:border-darkborder shadow-lg rounded-xl p-3">
+        <p className="text-gray-500 dark:text-gray-400 text-xs mb-1">
+          {format(parseISO(label), "EEEE d 'de' MMMM", { locale: es })}
+        </p>
+        <p className="font-bold text-gray-900 dark:text-white text-lg">
+          Q{parseFloat(payload[0].value).toFixed(2)}
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
+
 export default function DashboardPage() {
-  const [chartDays, setChartDays] = useState(7);
+  const [chartDays, setChartDays] = useState(14);
+  const { isDark } = useThemeStore();
 
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ['dashboard'],
@@ -108,27 +126,37 @@ export default function DashboardPage() {
       </div>
 
       {/* Revenue Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="card bg-gradient-to-r from-blue-600 to-blue-700 text-white border-0 shadow-md">
-          <div className="flex items-center justify-between">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <div className="cuzo-card bg-gradient-to-br from-blue-600 to-indigo-700 text-white border-0 shadow-lg p-6 relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-10">
+            <DollarSign className="w-24 h-24" />
+          </div>
+          <div className="relative flex items-center justify-between">
             <div>
-              <p className="text-blue-100 text-sm">Ventas hoy</p>
-              <p className="text-3xl font-bold mt-1">
+              <p className="text-blue-100 text-sm font-medium">Ventas hoy</p>
+              <p className="text-4xl font-bold mt-1">
                 Q{revenue.today?.toFixed(2) || '0.00'}
               </p>
             </div>
-            <DollarSign className="w-10 h-10 text-blue-200 opacity-60" />
+            <div className="bg-white/20 p-3 rounded-2xl backdrop-blur-sm">
+              <DollarSign className="w-8 h-8 text-white" />
+            </div>
           </div>
         </div>
-        <div className="card bg-gradient-to-r from-green-500 to-green-600 text-white border-0 shadow-md">
-          <div className="flex items-center justify-between">
+        <div className="cuzo-card bg-gradient-to-br from-emerald-500 to-teal-700 text-white border-0 shadow-lg p-6 relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-10">
+            <TrendingUp className="w-24 h-24" />
+          </div>
+          <div className="relative flex items-center justify-between">
             <div>
-              <p className="text-green-100 text-sm">Ventas este mes</p>
-              <p className="text-3xl font-bold mt-1">
+              <p className="text-emerald-100 text-sm font-medium">Ventas este mes</p>
+              <p className="text-4xl font-bold mt-1">
                 Q{revenue.this_month?.toFixed(2) || '0.00'}
               </p>
             </div>
-            <TrendingUp className="w-10 h-10 text-green-200 opacity-60" />
+            <div className="bg-white/20 p-3 rounded-2xl backdrop-blur-sm">
+              <TrendingUp className="w-8 h-8 text-white" />
+            </div>
           </div>
         </div>
       </div>
@@ -166,7 +194,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Sales Chart */}
-      <div className="card">
+      <div className="cuzo-card p-5">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="font-semibold text-gray-800 dark:text-gray-100">Ventas diarias</h2>
@@ -197,26 +225,24 @@ export default function DashboardPage() {
                   <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#f3f4f6'} vertical={false} />
               <XAxis
                 dataKey="day"
                 tickFormatter={v => format(parseISO(v), 'd MMM', { locale: es })}
-                tick={{ fontSize: 11, fill: '#9ca3af' }}
+                tick={{ fontSize: 11, fill: isDark ? '#9ca3af' : '#6b7280' }}
                 axisLine={false}
                 tickLine={false}
+                dy={10}
               />
               <YAxis
                 tickFormatter={v => `Q${v}`}
-                tick={{ fontSize: 11, fill: '#9ca3af' }}
+                tick={{ fontSize: 11, fill: isDark ? '#9ca3af' : '#6b7280' }}
                 axisLine={false}
                 tickLine={false}
                 width={52}
+                dx={-10}
               />
-              <Tooltip
-                formatter={(v) => [`Q${parseFloat(v).toFixed(2)}`, 'Ingresos']}
-                labelFormatter={(l) => format(parseISO(l), "EEEE d 'de' MMMM", { locale: es })}
-                contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e5e7eb' }}
-              />
+              <Tooltip content={<CustomTooltip />} cursor={{ stroke: isDark ? '#4b5563' : '#d1d5db', strokeWidth: 1, strokeDasharray: '4 4' }} />
               <Area
                 type="monotone"
                 dataKey="revenue"
@@ -241,13 +267,13 @@ export default function DashboardPage() {
           <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Estado de Routers MikroTik</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {data.devices.map((device) => (
-              <div key={device.id} className="card p-4 flex items-center justify-between">
+              <div key={device.id} className="cuzo-card p-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="bg-gray-100 p-2 rounded-lg">
-                    <Router className="w-4 h-4 text-gray-500" />
+                  <div className="bg-gray-50 dark:bg-darkbg p-2 rounded-lg border border-gray-100 dark:border-darkborder">
+                    <Router className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                   </div>
                   <div>
-                    <p className="font-medium text-gray-800 text-sm">{device.name}</p>
+                    <p className="font-medium text-gray-800 dark:text-white text-sm">{device.name}</p>
                     <p className="text-xs text-gray-400">
                       {device.last_sync
                         ? `Sync: ${format(new Date(device.last_sync), 'HH:mm')}`
