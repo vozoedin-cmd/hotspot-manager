@@ -63,36 +63,10 @@ class VoucherService {
           mikrotikId = result?.['.id'] || result?.[0]?.ret;
           mikrotikOk = true;
         } catch (mtError) {
-          // Si el error es de perfil no encontrado, reintentar con "default"
-          const isProfileError = mtError.message && (
-            mtError.message.includes('input does not match any value of profile') ||
-            mtError.message.includes('no such item') ||
-            mtError.message.toLowerCase().includes('profile')
-          );
-
-          if (isProfileError && profileToUse !== 'default') {
-            logger.warn(`Perfil "${profileToUse}" no existe en MikroTik para ${code}, reintentando con "default"`);
-            try {
-              const result2 = await mikrotikService.createHotspotUser(device, {
-                username: code,
-                password: password,
-                profile: 'default',
-                server: hotspotServer,
-                limitUptime,
-                comment: `BATCH:${batchId} PKG:${pkg.name} (perfil:default)`,
-              });
-              mikrotikId = result2?.['.id'] || result2?.[0]?.ret;
-              mikrotikOk = true;
-              logger.info(`${code} creado en MikroTik con perfil "default" (original: ${profileToUse})`);
-            } catch (mtError2) {
-              mikrotikErrors.push({ code, error: mtError2.message });
-              logger.error(`Error creando ${code} en MikroTik (perfil default): ${mtError2.message}`);
-            }
-          } else {
-            mikrotikErrors.push({ code, error: mtError.message });
-            logger.error(`Error creando ${code} en MikroTik: ${mtError.message}`);
-          }
+          mikrotikErrors.push({ code, error: mtError.message });
+          logger.error(`Error creando ${code} en MikroTik (perfil ${profileToUse}): ${mtError.message}`);
         }
+
 
         const voucher = await Voucher.create({
           code,
