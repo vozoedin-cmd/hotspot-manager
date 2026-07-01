@@ -1,5 +1,14 @@
 const express = require('express');
 const router = express.Router();
+const rateLimit = require('express-rate-limit');
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Demasiados intentos de inicio de sesión, intenta en 15 minutos.' },
+});
 const {
   login, refreshToken, logout, me, changePassword,
   setup2FA, verify2FA, disable2FA, status2FA,
@@ -8,7 +17,7 @@ const {
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { auditLog } = require('../middleware/auditLog');
 
-router.post('/login', loginValidation, auditLog('LOGIN', 'user'), login);
+router.post('/login', authLimiter, loginValidation, auditLog('LOGIN', 'user'), login);
 router.post('/refresh', refreshToken);
 router.post('/logout', authenticate, auditLog('LOGOUT', 'user'), logout);
 router.get('/me', authenticate, me);
