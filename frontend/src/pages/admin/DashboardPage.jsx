@@ -29,7 +29,7 @@ const StatCard = ({ title, value, subtitle, icon: Icon, color = 'blue', loading 
   };
 
   return (
-    <div className="cuzo-card hover:shadow-lg transition-shadow p-5">
+    <div className="glass-card-premium animate-fade-in p-5">
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm text-gray-500 dark:text-cuzo-textMuted mb-1">{title}</p>
@@ -110,7 +110,7 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+          <h1 className="text-2xl font-bold text-gradient-primary">Dashboard</h1>
           <p className="text-sm text-gray-500 mt-0.5">
             {format(new Date(), "EEEE, d 'de' MMMM yyyy", { locale: es })}
           </p>
@@ -127,13 +127,15 @@ export default function DashboardPage() {
 
       {/* Revenue Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-        <div className="cuzo-card bg-gradient-to-br from-blue-600 to-indigo-700 text-white border-0 shadow-lg p-6 relative overflow-hidden">
+        <div className="glass-card-premium animate-fade-in delay-100 p-6 relative overflow-hidden">
+          {/* Subtle gradient overlay to keep it colorful but glassy */}
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-indigo-600/20 mix-blend-overlay"></div>
           <div className="absolute top-0 right-0 p-4 opacity-10">
             <DollarSign className="w-24 h-24" />
           </div>
           <div className="relative flex items-center justify-between">
             <div>
-              <p className="text-blue-100 text-sm font-medium">Ventas hoy</p>
+              <p className="text-gray-300 text-sm font-medium">Ventas hoy</p>
               <p className="text-4xl font-bold mt-1">
                 Q{revenue.today?.toFixed(2) || '0.00'}
               </p>
@@ -143,13 +145,14 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
-        <div className="cuzo-card bg-gradient-to-br from-emerald-500 to-teal-700 text-white border-0 shadow-lg p-6 relative overflow-hidden">
+        <div className="glass-card-premium animate-fade-in delay-100 p-6 relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/20 to-teal-600/20 mix-blend-overlay"></div>
           <div className="absolute top-0 right-0 p-4 opacity-10">
             <TrendingUp className="w-24 h-24" />
           </div>
           <div className="relative flex items-center justify-between">
             <div>
-              <p className="text-emerald-100 text-sm font-medium">Ventas este mes</p>
+              <p className="text-gray-300 text-sm font-medium">Ventas este mes</p>
               <p className="text-4xl font-bold mt-1">
                 Q{revenue.this_month?.toFixed(2) || '0.00'}
               </p>
@@ -194,10 +197,10 @@ export default function DashboardPage() {
       </div>
 
       {/* Sales Chart */}
-      <div className="cuzo-card p-5">
+      <div className="glass-card-premium animate-fade-in delay-200 p-5">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="font-semibold text-gray-800 dark:text-gray-100">Ventas diarias</h2>
+            <h2 className="font-semibold text-white">Ventas diarias</h2>
             <p className="text-xs text-gray-400 mt-0.5">Ingresos por día</p>
           </div>
           <div className="flex gap-1">

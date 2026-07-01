@@ -11,6 +11,8 @@ import { sellersApi } from '../services/api';
 import toast from 'react-hot-toast';
 import useSocket from '../hooks/useSocket';
 import NotificationBell from '../components/NotificationBell';
+import '../admin-theme.css';
+
 const navItems = [
   { to: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
   { to: '/admin/vouchers', icon: Ticket, label: 'Fichas' },
@@ -112,9 +114,9 @@ export default function AdminLayout() {
   );
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="admin-universe flex h-screen overflow-hidden">
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex flex-col w-64 glass-panel border-r border-y-0 border-l-0 flex-shrink-0 z-10">
+      <aside className="admin-sidebar hidden lg:flex flex-col w-64 border-r border-y-0 border-l-0 flex-shrink-0 z-10">
         <SidebarContent />
       </aside>
 
@@ -137,7 +139,7 @@ export default function AdminLayout() {
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative z-0">
         {/* Mobile header */}
-        <header className="lg:hidden glass-panel border-b border-x-0 border-t-0 px-4 py-3 flex items-center gap-3">
+        <header className="admin-header lg:hidden border-b border-x-0 border-t-0 px-4 py-3 flex items-center gap-3">
           <button onClick={() => setSidebarOpen(true)}>
             <Menu className="w-6 h-6 text-white" />
           </button>
@@ -155,7 +157,7 @@ export default function AdminLayout() {
         </header>
 
         {/* Content */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 dark:bg-gray-900">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-transparent">
           <Outlet />
         </main>
       </div>
