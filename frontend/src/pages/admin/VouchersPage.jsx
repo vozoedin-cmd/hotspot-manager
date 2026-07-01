@@ -106,8 +106,8 @@ export default function VouchersPage() {
     <div className="space-y-4 max-w-7xl">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Fichas Hotspot</h1>
-          <p className="text-sm text-gray-500">Gestiona todas las fichas del sistema</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white admin-text-light">Fichas Hotspot</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 admin-text-muted">Gestiona todas las fichas del sistema</p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -136,7 +136,7 @@ export default function VouchersPage() {
       </div>
 
       {/* Filters */}
-      <div className="card p-4">
+      <div className="card dark:bg-gray-800/80 p-4">
         <div className="flex flex-wrap gap-3">
           {/* Búsqueda por código */}
           <div className="relative flex-1 min-w-48">
