@@ -150,6 +150,13 @@ export default function VouchersPage() {
   const pagination = data?.pagination || {};
   const vStats = dashData?.vouchers || {};
 
+  const getRelevantDate = (v) => {
+    if (v.status === 'sold' && v.sold_at) return v.sold_at;
+    if (v.status === 'active' && v.activated_at) return v.activated_at;
+    if ((v.status === 'used' || v.status === 'expired') && v.used_at) return v.used_at;
+    return v.created_at;
+  };
+
   const handleExcelExport = () => {
     const rows = vouchers.map((v) => ({
       Código: v.code,
@@ -158,7 +165,7 @@ export default function VouchersPage() {
       Router: v.device?.name ?? '',
       Vendedor: v.seller?.name ?? '',
       Estado: STATUS_LABELS[v.status]?.label ?? v.status,
-      Creado: v.created_at ? format(new Date(v.created_at), 'dd/MM/yyyy HH:mm') : '-',
+      Fecha: getRelevantDate(v) ? format(new Date(getRelevantDate(v)), 'dd/MM/yyyy HH:mm') : '-',
     }));
     exportToExcel(rows, Object.keys(rows[0] ?? {}), 'fichas_hotspot', 'Fichas');
   };
@@ -174,7 +181,7 @@ export default function VouchersPage() {
         v.device?.name ?? '—',
         v.seller?.name ?? '—',
         STATUS_LABELS[v.status]?.label ?? v.status,
-        v.created_at ? format(new Date(v.created_at), 'dd/MM/yy') : '-',
+        getRelevantDate(v) ? format(new Date(getRelevantDate(v)), 'dd/MM/yy') : '-',
       ]),
       summary: [
         { label: 'Total fichas', value: pagination.total ?? vouchers.length },
@@ -313,6 +320,7 @@ export default function VouchersPage() {
               {vouchers.map((v) => {
                 const st = STATUS_LABELS[v.status] || { label: v.status, bg: 'bg-slate-500/10', text: 'text-slate-400', dot: 'bg-slate-400' };
                 const sellerInitial = v.seller?.name ? v.seller.name.charAt(0).toUpperCase() : '?';
+                const dateToShow = getRelevantDate(v);
 
                 return (
                   <div key={v.id} className="grid grid-cols-12 gap-4 px-4 py-3 items-center bg-slate-800/30 hover:bg-slate-800/60 border border-white/5 rounded-2xl transition-all">
@@ -372,10 +380,10 @@ export default function VouchersPage() {
                     <div className="col-span-2 flex items-center justify-between">
                       <div className="flex flex-col min-w-0">
                         <span className="text-xs font-medium text-slate-300 truncate">
-                          {v.created_at ? formatDistanceToNow(new Date(v.created_at), { addSuffix: true, locale: es }) : ''}
+                          {dateToShow ? formatDistanceToNow(new Date(dateToShow), { addSuffix: true, locale: es }) : ''}
                         </span>
                         <span className="text-[10px] text-slate-500 truncate">
-                          {v.created_at ? format(new Date(v.created_at), 'dd/MM/yy HH:mm') : '-'}
+                          {dateToShow ? format(new Date(dateToShow), 'dd/MM/yy HH:mm') : '-'}
                         </span>
                       </div>
                       <ActionMenu voucher={v} onDisable={handleDisable} />
