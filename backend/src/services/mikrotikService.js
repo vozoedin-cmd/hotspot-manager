@@ -36,6 +36,16 @@ class MikrotikService {
 
     try {
       await conn.connect();
+      
+      // Manejar eventos de error emitidos por la librería para evitar caídas (ej. !empty unhandled)
+      conn.on('error', (err) => {
+        if (err.errno === 'UNKNOWNREPLY' || err.message?.includes('!empty')) {
+          logger.warn(`MikroTik ${device.name} respondió con !empty (ignorado)`);
+        } else {
+          logger.error(`MikroTik Error Event [${device.name}]: ${err.message}`);
+        }
+      });
+
       this.connections.set(key, conn);
       logger.info(`MikroTik conectado: ${device.name} [${device.host}]`);
       return conn;
