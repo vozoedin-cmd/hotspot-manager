@@ -4,7 +4,22 @@
  * Puerto API: 8728 (sin SSL) / 8729 (con SSL)
  */
 const RouterOSAPI = require('node-routeros').RouterOSAPI;
+const { Channel } = require('node-routeros/dist/Channel');
 const logger = require('../config/logger');
+
+// MONKEY PATCH para node-routeros: Evitar que crashee toda la app cuando MikroTik devuelve !empty
+if (Channel && Channel.prototype) {
+  const originalOnUnknown = Channel.prototype.onUnknown;
+  Channel.prototype.onUnknown = function(reply) {
+    if (reply && reply.includes('!empty')) {
+      // MikroTik respondió que no hay elementos. Resolvemos la promesa limpia con un arreglo vacío.
+      this.emit('done', []);
+      return;
+    }
+    // Si es otro tipo de respuesta desconocida, mantener el comportamiento original
+    originalOnUnknown.call(this, reply);
+  };
+}
 
 class MikrotikService {
   constructor() {
