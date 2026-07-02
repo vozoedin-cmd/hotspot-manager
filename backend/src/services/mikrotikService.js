@@ -4,21 +4,22 @@
  * Puerto API: 8728 (sin SSL) / 8729 (con SSL)
  */
 const RouterOSAPI = require('node-routeros').RouterOSAPI;
-const { Channel } = require('node-routeros/dist/Channel');
 const logger = require('../config/logger');
 
-// MONKEY PATCH para node-routeros: Evitar que crashee toda la app cuando MikroTik devuelve !empty
-if (Channel && Channel.prototype) {
-  const originalOnUnknown = Channel.prototype.onUnknown;
-  Channel.prototype.onUnknown = function(reply) {
-    if (reply && reply.includes('!empty')) {
-      // MikroTik respondió que no hay elementos. Resolvemos la promesa limpia con un arreglo vacío.
-      this.emit('done', []);
+// PREVENCIÓN DE CRASHEOS GLOBALES POR BUGS EN node-routeros
+// La librería tiene bugs conocidos cuando MikroTik devuelve !empty o tags desordenados.
+// Como tira excepciones síncronas que rompen la app, las atrapamos globalmente aquí.
+let exceptionHandlerAdded = false;
+if (!exceptionHandlerAdded) {
+  process.on('uncaughtException', (err) => {
+    if (err.errno === 'UNKNOWNREPLY' || err.errno === 'UNREGISTEREDTAG' || err.message?.includes('!empty')) {
+      logger.warn(`[Ignorado] Bug interno de node-routeros atrapado: ${err.message}`);
       return;
     }
-    // Si es otro tipo de respuesta desconocida, mantener el comportamiento original
-    originalOnUnknown.call(this, reply);
-  };
+    logger.error(`Uncaught Exception FATAL: ${err.message}`, err);
+    process.exit(1);
+  });
+  exceptionHandlerAdded = true;
 }
 
 class MikrotikService {
@@ -92,10 +93,12 @@ class MikrotikService {
   async getHotspotUsers(device) {
     const conn = await this.connect(device);
     try {
-      const users = await conn.write('/ip/hotspot/user/print');
+      const users = await Promise.race([
+        conn.write('/ip/hotspot/user/print'),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('!empty_timeout')), 3000))
+      ]);
       return users;
     } catch (error) {
-      // MikroTik responde '!empty' cuando no hay usuarios → devolver array vacío
       if (error.errno === 'UNKNOWNREPLY' || error.message?.includes('!empty')) {
         logger.info(`Sin usuarios hotspot en ${device.name} (respuesta vacía)`);
         return [];
@@ -111,10 +114,12 @@ class MikrotikService {
   async getActiveHotspotUsers(device) {
     const conn = await this.connect(device);
     try {
-      const active = await conn.write('/ip/hotspot/active/print');
+      const active = await Promise.race([
+        conn.write('/ip/hotspot/active/print'),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('!empty_timeout')), 3000))
+      ]);
       return active;
     } catch (error) {
-      // MikroTik responde '!empty' cuando no hay sesiones activas → devolver array vacío
       if (error.errno === 'UNKNOWNREPLY' || error.message?.includes('!empty')) {
         logger.info(`Sin usuarios activos en ${device.name} (respuesta vacía)`);
         return [];
