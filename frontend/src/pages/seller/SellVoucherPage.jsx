@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { packagesApi, vouchersApi, reportsApi } from '../../services/api';
 import useAuthStore from '../../store/authStore';
 import toast from 'react-hot-toast';
-import { CheckCircle, Wifi, Clock, Copy, RefreshCw, Wallet } from 'lucide-react';
+import { CheckCircle, Wifi, Clock, Copy, RefreshCw, Wallet, MessageCircle } from 'lucide-react';
 
 function PackageCard({ pkg, selected, onSelect, canAfford }) {
   const durationLabels = {
@@ -51,6 +51,7 @@ function PackageCard({ pkg, selected, onSelect, canAfford }) {
 export default function SellVoucherPage() {
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [clientName, setClientName] = useState('');
+  const [clientPhone, setClientPhone] = useState('');
   const [soldVoucher, setSoldVoucher] = useState(null);
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
@@ -85,7 +86,8 @@ export default function SellVoucherPage() {
       // res.data = { message, data: { voucher, sale_id, balance_remaining } }
       setSoldVoucher(res.data?.data?.voucher ?? res.data?.voucher ?? res.data?.data ?? res.data);
       setSelectedPackage(null);
-      setClientName('');
+      // No reseteamos el nombre y teléfono aquí para poder usarlos en el mensaje de WhatsApp si es necesario,
+      // se pueden resetear al "Vender otra"
       queryClient.invalidateQueries({ queryKey: ['seller-dashboard'] });
       queryClient.invalidateQueries({ queryKey: ['packages-for-sell'] });
       toast.success('¡Ficha vendida exitosamente!');
@@ -109,7 +111,11 @@ export default function SellVoucherPage() {
     toast.success('Copiado');
   };
 
-  const reset = () => setSoldVoucher(null);
+  const reset = () => {
+    setSoldVoucher(null);
+    setClientName('');
+    setClientPhone('');
+  };
 
   if (soldVoucher) {
     const isPin = soldVoucher.voucher_type === 'pin' || soldVoucher.code === soldVoucher.password;
@@ -166,6 +172,26 @@ export default function SellVoucherPage() {
           </div>
         </div>
 
+        {clientPhone && (
+          <a
+            href={`https://wa.me/${clientPhone.replace(/\D/g, '')}?text=${encodeURIComponent(
+              `¡Hola${clientName ? ' ' + clientName : ''}! Aquí tienes tu ficha de internet.\n\n` +
+              `Paquete: ${soldVoucher.package?.name ?? '—'}\n` +
+              (isPin 
+                ? `PIN: ${soldVoucher.code}`
+                : `Usuario: ${soldVoucher.code}\nContraseña: ${soldVoucher.password}`
+              ) +
+              `\n\n¡Gracias por tu compra!`
+            )}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 bg-green-500 text-white rounded-xl px-5 py-3 w-full max-w-sm justify-center hover:bg-green-600 transition-colors font-medium shadow-lg shadow-green-500/30"
+          >
+            <MessageCircle className="w-5 h-5" />
+            Enviar por WhatsApp
+          </a>
+        )}
+
         <button
           onClick={reset}
           className="flex items-center gap-2 btn-primary w-full max-w-sm justify-center"
@@ -208,6 +234,20 @@ export default function SellVoucherPage() {
           value={clientName}
           onChange={(e) => setClientName(e.target.value)}
           placeholder="Ej: Juan Pérez"
+          className="input"
+        />
+      </div>
+
+      {/* Client Phone (optional) */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          WhatsApp del cliente <span className="text-gray-400">(opcional)</span>
+        </label>
+        <input
+          type="tel"
+          value={clientPhone}
+          onChange={(e) => setClientPhone(e.target.value)}
+          placeholder="Ej: 502 1234 5678"
           className="input"
         />
       </div>
