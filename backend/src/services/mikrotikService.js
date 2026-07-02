@@ -14,6 +14,7 @@ if (!exceptionHandlerAdded) {
   process.on('uncaughtException', (err) => {
     if (err.errno === 'UNKNOWNREPLY' || err.errno === 'UNREGISTEREDTAG' || err.message?.includes('!empty')) {
       logger.warn(`[Ignorado] Bug interno de node-routeros atrapado: ${err.message}`);
+      MikrotikService.lastEmptyBugAt = Date.now();
       return;
     }
     logger.error(`Uncaught Exception FATAL: ${err.message}`, err);
@@ -77,6 +78,7 @@ class MikrotikService {
    */
   async safeWrite(conn, deviceId, command, timeoutMs = 5000) {
     conn.hasEmptyBug = false; // Reset flag before command
+    const startTime = Date.now();
     try {
       const result = await Promise.race([
         conn.write(command),
@@ -85,8 +87,11 @@ class MikrotikService {
       return result;
     } catch (error) {
       if (error.message === '!timeout') {
-        if (conn.hasEmptyBug) {
-          // El timeout fue causado porque MikroTik envió !empty y node-routeros se quedó colgado
+        const timeSinceBug = Date.now() - (MikrotikService.lastEmptyBugAt || 0);
+        const timeSinceStart = Date.now() - startTime;
+        
+        if (conn.hasEmptyBug || (timeSinceBug >= 0 && timeSinceBug <= timeSinceStart + 1000)) {
+          // El timeout fue causado porque MikroTik envió !empty y provocó una excepción global
           this.disconnect(deviceId);
           throw new Error('!empty_timeout');
         }
