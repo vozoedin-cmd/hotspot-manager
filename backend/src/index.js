@@ -70,6 +70,10 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 process.on('uncaughtException', (error) => {
+  if (error.errno === 'UNKNOWNREPLY' || error.errno === 'UNREGISTEREDTAG' || error.message?.includes('!empty')) {
+    // Ignorado globalmente porque es un bug conocido de node-routeros al consultar listas vacías
+    return;
+  }
   logger.error('Excepción no capturada:', error);
   process.exit(1);
 });
