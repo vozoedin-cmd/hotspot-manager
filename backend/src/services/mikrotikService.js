@@ -57,6 +57,7 @@ class MikrotikService {
       conn.on('error', (err) => {
         if (err.errno === 'UNKNOWNREPLY' || err.message?.includes('!empty')) {
           logger.warn(`MikroTik ${device.name} respondió con !empty (ignorado)`);
+          conn.hasEmptyBug = true; // Marcamos la conexión para que safeWrite lo sepa
         } else {
           logger.error(`MikroTik Error Event [${device.name}]: ${err.message}`);
         }
@@ -75,6 +76,7 @@ class MikrotikService {
    * Ejecutar un comando de manera segura con timeout. Evita bloqueos indefinidos.
    */
   async safeWrite(conn, deviceId, command, timeoutMs = 5000) {
+    conn.hasEmptyBug = false; // Reset flag before command
     try {
       const result = await Promise.race([
         conn.write(command),
@@ -82,10 +84,19 @@ class MikrotikService {
       ]);
       return result;
     } catch (error) {
-      if (error.message === '!timeout' || error.errno === 'UNKNOWNREPLY' || error.message?.includes('!empty')) {
-        // La conexión podría estar corrupta, forzamos cierre para que se reconecte en el próximo intento
+      if (error.message === '!timeout') {
+        if (conn.hasEmptyBug) {
+          // El timeout fue causado porque MikroTik envió !empty y node-routeros se quedó colgado
+          this.disconnect(deviceId);
+          throw new Error('!empty_timeout');
+        }
+        // Timeout real
         this.disconnect(deviceId);
+      } else if (error.errno === 'UNKNOWNREPLY' || error.message?.includes('!empty')) {
+        this.disconnect(deviceId);
+        throw new Error('!empty_timeout');
       }
+      
       throw error;
     }
   }
