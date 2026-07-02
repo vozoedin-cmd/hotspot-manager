@@ -46,6 +46,7 @@ const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',
   levels,
   format,
+  exitOnError: false, // Prevenir que Winston mate la app por excepciones no manejadas (e.g. bugs de node-routeros)
   transports: [
     new winston.transports.File({
       filename: path.join(logDir, 'error.log'),
