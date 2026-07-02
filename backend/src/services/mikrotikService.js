@@ -72,6 +72,25 @@ class MikrotikService {
   }
 
   /**
+   * Ejecutar un comando de manera segura con timeout. Evita bloqueos indefinidos.
+   */
+  async safeWrite(conn, deviceId, command, timeoutMs = 5000) {
+    try {
+      const result = await Promise.race([
+        conn.write(command),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('!timeout')), timeoutMs))
+      ]);
+      return result;
+    } catch (error) {
+      if (error.message === '!timeout' || error.errno === 'UNKNOWNREPLY' || error.message?.includes('!empty')) {
+        // La conexión podría estar corrupta, forzamos cierre para que se reconecte en el próximo intento
+        this.disconnect(deviceId);
+      }
+      throw error;
+    }
+  }
+
+  /**
    * Cerrar conexión con un dispositivo
    */
   async disconnect(deviceId) {
@@ -93,10 +112,7 @@ class MikrotikService {
   async getHotspotUsers(device) {
     const conn = await this.connect(device);
     try {
-      const users = await Promise.race([
-        conn.write('/ip/hotspot/user/print'),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('!empty_timeout')), 3000))
-      ]);
+      const users = await this.safeWrite(conn, device.id, '/ip/hotspot/user/print');
       return users;
     } catch (error) {
       if (error.errno === 'UNKNOWNREPLY' || error.message?.includes('!empty')) {
@@ -114,10 +130,7 @@ class MikrotikService {
   async getActiveHotspotUsers(device) {
     const conn = await this.connect(device);
     try {
-      const active = await Promise.race([
-        conn.write('/ip/hotspot/active/print'),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('!empty_timeout')), 3000))
-      ]);
+      const active = await this.safeWrite(conn, device.id, '/ip/hotspot/active/print');
       return active;
     } catch (error) {
       if (error.errno === 'UNKNOWNREPLY' || error.message?.includes('!empty')) {
@@ -160,7 +173,7 @@ class MikrotikService {
     if (limitBytesTotal > 0) params.push('=limit-bytes-total=' + limitBytesTotal);
 
     try {
-      const result = await conn.write(['/ip/hotspot/user/add', ...params]);
+      const result = await this.safeWrite(conn, device.id, ['/ip/hotspot/user/add', ...params]);
       logger.info(`Usuario hotspot creado en ${device.name}: ${username} | uptime: ${limitUptime || 'sin límite'}`);
       return result;
     } catch (error) {
@@ -194,8 +207,8 @@ class MikrotikService {
   async removeHotspotUser(device, mikrotikId) {
     const conn = await this.connect(device);
     try {
-      await conn.write(['/ip/hotspot/user/remove', `=.id=${mikrotikId}`]);
-      logger.info(`Usuario ${mikrotikId} eliminado de ${device.name}`);
+      await this.safeWrite(conn, device.id, ['/ip/hotspot/user/remove', `=.id=${mikrotikId}`]);
+      logger.info(`Usuario hotspot eliminado en ${device.name}: ID ${mikrotikId}`);
     } catch (error) {
       logger.error(`Error eliminando usuario ${mikrotikId}: ${error.message}`);
       throw error;
@@ -208,8 +221,8 @@ class MikrotikService {
   async disableHotspotUser(device, mikrotikId) {
     const conn = await this.connect(device);
     try {
-      await conn.write(['/ip/hotspot/user/set', `=.id=${mikrotikId}`, '=disabled=yes']);
-      logger.info(`Usuario ${mikrotikId} deshabilitado en ${device.name}`);
+      await this.safeWrite(conn, device.id, ['/ip/hotspot/user/set', `=.id=${mikrotikId}`, '=disabled=yes']);
+      logger.info(`Ficha deshabilitada en MikroTik ${device.name}: ID ${mikrotikId}`);
     } catch (error) {
       logger.error(`Error deshabilitando usuario ${mikrotikId}: ${error.message}`);
       throw error;
@@ -222,8 +235,8 @@ class MikrotikService {
   async enableHotspotUser(device, mikrotikId) {
     const conn = await this.connect(device);
     try {
-      await conn.write(['/ip/hotspot/user/set', `=.id=${mikrotikId}`, '=disabled=no']);
-      logger.info(`Usuario ${mikrotikId} habilitado en ${device.name}`);
+      await this.safeWrite(conn, device.id, ['/ip/hotspot/user/set', `=.id=${mikrotikId}`, '=disabled=no']);
+      logger.info(`Ficha habilitada en MikroTik ${device.name}: ID ${mikrotikId}`);
     } catch (error) {
       logger.error(`Error habilitando usuario ${mikrotikId}: ${error.message}`);
       throw error;
@@ -236,8 +249,8 @@ class MikrotikService {
   async disconnectActiveUser(device, activeId) {
     const conn = await this.connect(device);
     try {
-      await conn.write(['/ip/hotspot/active/remove', `=.id=${activeId}`]);
-      logger.info(`Sesión activa ${activeId} desconectada en ${device.name}`);
+      await this.safeWrite(conn, device.id, ['/ip/hotspot/active/remove', `=.id=${activeId}`]);
+      logger.info(`Sesión activa desconectada en ${device.name}: ID ${activeId}`);
     } catch (error) {
       logger.error(`Error desconectando sesión ${activeId}: ${error.message}`);
       throw error;
@@ -250,7 +263,7 @@ class MikrotikService {
   async getHotspotProfiles(device) {
     const conn = await this.connect(device);
     try {
-      const profiles = await conn.write('/ip/hotspot/user/profile/print');
+      const profiles = await this.safeWrite(conn, device.id, '/ip/hotspot/user/profile/print');
       return profiles;
     } catch (error) {
       logger.error(`Error obteniendo perfiles de ${device.name}: ${error.message}`);
@@ -264,7 +277,7 @@ class MikrotikService {
   async getHotspotServers(device) {
     const conn = await this.connect(device);
     try {
-      const servers = await conn.write('/ip/hotspot/print');
+      const servers = await this.safeWrite(conn, device.id, '/ip/hotspot/print');
       return servers;
     } catch (error) {
       logger.error(`Error obteniendo servidores hotspot de ${device.name}: ${error.message}`);
@@ -280,7 +293,7 @@ class MikrotikService {
     const conn = await this.connect(device);
     try {
       // Buscar en usuarios registrados
-      const users = await conn.write([
+      const users = await this.safeWrite(conn, device.id, [
         '/ip/hotspot/user/print',
         `?name=${username}`,
       ]);
@@ -292,7 +305,7 @@ class MikrotikService {
       const user = users[0];
 
       // Buscar en sesiones activas
-      const activeSessions = await conn.write([
+      const activeSessions = await this.safeWrite(conn, device.id, [
         '/ip/hotspot/active/print',
         `?user=${username}`,
       ]);
@@ -319,8 +332,8 @@ class MikrotikService {
   async testConnection(device) {
     try {
       const conn = await this.connect(device);
-      const identity = await conn.write('/system/identity/print');
-      const resource = await conn.write('/system/resource/print');
+      const identity = await this.safeWrite(conn, device.id, '/system/identity/print');
+      const resource = await this.safeWrite(conn, device.id, '/system/resource/print');
 
       return {
         success: true,
