@@ -21,16 +21,17 @@
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
+    "node-cron": "^3.0.3",
     "node-routeros": "^1.2.9",
+    "otplib": "^12.0.1",
     "pg": "^8.12.0",
     "pg-hstore": "^2.3.4",
+    "qrcode": "^1.5.3",
     "sequelize": "^6.37.3",
     "socket.io": "^4.7.5",
+    "sqlite3": "^6.0.1",
     "uuid": "^10.0.0",
-    "winston": "^3.13.0",
-    "node-cron": "^3.0.3",
-    "otplib": "^12.0.1",
-    "qrcode": "^1.5.3"
+    "winston": "^3.13.0"
   },
   "devDependencies": {
     "jest": "^29.7.0",

@@ -1,70 +1,47 @@
 /* =========================================================
-   ADMIN UNIVERSE THEME (Isolated from Seller Portal)
+   ADMIN UNIVERSE THEME (Neumorphism Redesign)
    ========================================================= */
 
 .admin-universe {
-  /* Dynamic Mesh Gradient Background */
-  background: radial-gradient(circle at 15% 50%, rgba(20, 30, 70, 0.4), transparent 50%),
-              radial-gradient(circle at 85% 30%, rgba(15, 60, 80, 0.4), transparent 50%),
-              radial-gradient(circle at 50% 80%, rgba(30, 20, 60, 0.3), transparent 50%);
-  background-color: #050510; /* Very deep dark baseline */
+  /* Neumorphic soft background */
+  background: var(--bg-neumorphic-bg, #e6eef5);
   min-height: 100vh;
-  color: #e2e8f0;
+  color: #1e293b;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+.dark .admin-universe {
+  background: #0f172a;
+  color: #f1f5f9;
 }
 
-/* Glassmorphism Cards */
-.admin-universe .glass-card-premium {
-  background: rgba(20, 25, 35, 0.45);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-  border-radius: 1.25rem;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  overflow: hidden;
-  position: relative;
-}
-
-.admin-universe .glass-card-premium:hover {
-  border-color: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.4);
-  transform: translateY(-2px);
-}
-
-/* Inner glow for borders */
-.admin-universe .glass-card-premium::before {
-  content: "";
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  border-radius: 1.25rem;
-  padding: 1px;
-  background: linear-gradient(135deg, rgba(255,255,255,0.15), rgba(255,255,255,0) 60%);
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-}
-
-/* Sidebar override */
-.admin-universe .admin-sidebar {
-  background: rgba(10, 12, 20, 0.6) !important;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-right: 1px solid rgba(255, 255, 255, 0.05) !important;
-}
-
-/* Header override */
+/* Sidebar and Header override for Neumorphism */
+.admin-universe .admin-sidebar,
 .admin-universe .admin-header {
-  background: rgba(10, 12, 20, 0.5) !important;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: #e6eef5 !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.4) !important;
+  box-shadow: 4px 0 10px rgba(200, 208, 216, 0.5);
+  transition: all 0.3s ease;
+}
+.admin-universe .admin-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.4) !important;
+  box-shadow: 0 4px 10px rgba(200, 208, 216, 0.5);
+}
+
+.dark .admin-universe .admin-sidebar,
+.dark .admin-universe .admin-header {
+  background: #0f172a !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.05) !important;
+  box-shadow: 4px 0 10px rgba(0, 0, 0, 0.5);
+}
+.dark .admin-universe .admin-header {
   border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
 }
 
 /* Glowing text and icons on hover */
 .admin-universe .glow-on-hover:hover {
-  text-shadow: 0 0 12px rgba(96, 165, 250, 0.5);
-  color: #60a5fa;
+  text-shadow: 0 0 12px rgba(139, 92, 246, 0.4); /* Purple glow */
+  color: #8b5cf6;
 }
 
 /* Smooth Fade In Animation */
@@ -83,19 +60,38 @@
 
 /* Gradients for text */
 .admin-universe .text-gradient-primary {
-  background: linear-gradient(135deg, #60a5fa, #34d399);
+  background: linear-gradient(135deg, #8b5cf6, #3b82f6);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-/* Auto-fix dark text in Admin */
-.admin-universe .text-gray-900 { color: #f8fafc !important; }
-.admin-universe .text-gray-800 { color: #f1f5f9 !important; }
-.admin-universe .text-gray-700 { color: #e2e8f0 !important; }
-.admin-universe .text-gray-600 { color: #cbd5e1 !important; }
-.admin-universe .bg-white { background-color: rgba(30, 41, 59, 0.4) !important; color: #f8fafc !important; }
-.admin-universe .card { background: rgba(20, 25, 35, 0.45) !important; backdrop-filter: blur(12px) !important; border: 1px solid rgba(255, 255, 255, 0.08) !important; color: #fff !important; }
-.admin-universe .table-container { background: transparent !important; }
-.admin-universe .th { background-color: rgba(255, 255, 255, 0.05) !important; color: #94a3b8 !important; border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important; }
-.admin-universe .td { border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important; color: #f1f5f9 !important; }
+/* Remove forced dark colors to allow Tailwind and index.css classes to shine through */
+.admin-universe .text-gray-900 { color: inherit; }
+.admin-universe .text-gray-800 { color: inherit; }
+.admin-universe .text-gray-700 { color: inherit; }
+.admin-universe .text-gray-600 { color: inherit; }
+.admin-universe .bg-white { background-color: inherit; }
+
+/* Enforce neumorphic card globally in admin */
+.admin-universe .card, .admin-universe .glass-card-premium { 
+  background: #e6eef5 !important; 
+  box-shadow: 8px 8px 16px #c8d0d8, -8px -8px 16px #ffffff !important;
+  border: none !important; 
+  color: #1e293b !important; 
+  border-radius: 1.25rem;
+  transition: all 0.3s ease;
+}
+
+.dark .admin-universe .card, .dark .admin-universe .glass-card-premium {
+  background: #0f172a !important; 
+  box-shadow: 8px 8px 16px #020617, -8px -8px 16px #1e293b !important;
+  color: #f1f5f9 !important; 
+}
+
+.admin-universe .table-container { background: transparent !important; box-shadow: none !important; }
+.admin-universe .th { background-color: transparent !important; color: #64748b !important; border-bottom: 2px solid #cbd5e1 !important; }
+.admin-universe .td { border-bottom: 1px solid #e2e8f0 !important; color: #475569 !important; }
+
+.dark .admin-universe .th { color: #94a3b8 !important; border-bottom: 2px solid #334155 !important; }
+.dark .admin-universe .td { border-bottom: 1px solid #1e293b !important; color: #cbd5e1 !important; }

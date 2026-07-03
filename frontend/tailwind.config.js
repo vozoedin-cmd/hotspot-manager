@@ -11,22 +11,33 @@ export default {
         darkbg: '#0B1220',
         darkpanel: '#111827',
         darkborder: '#1F2937',
+        neumorphic: {
+          bg: '#e6eef5',
+          shadowLight: '#ffffff',
+          shadowDark: '#c8d0d8',
+          bgDark: '#0f172a', /* slate-900 */
+          shadowLightDark: '#1e293b', /* slate-800 */
+          shadowDarkDark: '#020617', /* slate-950 */
+        },
         primary: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
+          50: '#f3e8ff',
+          100: '#e9d5ff',
+          200: '#d8b4fe',
+          300: '#c084fc',
+          400: '#a855f7',
+          500: '#8b5cf6', // Violet/Purple accent
+          600: '#7c3aed',
+          700: '#6d28d9',
+          800: '#5b21b6',
+          900: '#4c1d95',
+        },
+        secondary: {
+          500: '#3b82f6', // Blue accent
         },
         cuzo: {
-          text: '#F8FAFC',
-          textMuted: '#94A3B8',
-          sidebar: '#0F172A',
+          text: '#1e293b',
+          textMuted: '#64748b',
+          sidebar: '#e6eef5',
         }
       }
     },

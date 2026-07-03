@@ -17,7 +17,7 @@ async function seed() {
       admin = await User.create({
         name: process.env.ADMIN_NAME || 'Administrador',
         email: adminEmail,
-        password: process.env.ADMIN_PASSWORD || 'Admin@12345!',
+        password: process.env.ADMIN_PASSWORD || 'Admin',
         role: 'admin',
         is_active: true,
       });
@@ -128,7 +128,7 @@ async function seed() {
 
     console.log('\n🎉 Seed completado exitosamente');
     console.log('─────────────────────────────────');
-    console.log(`Admin:    ${adminEmail} / ${process.env.ADMIN_PASSWORD || 'Admin@12345!'}`);
+    console.log(`Admin:    ${adminEmail} / ${process.env.ADMIN_PASSWORD || 'Admin'}`);
     console.log('Vendedor: vendedor@hotspot.com / Vendedor@123!');
     console.log('─────────────────────────────────');
 

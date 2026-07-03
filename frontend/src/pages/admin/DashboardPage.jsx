@@ -16,34 +16,76 @@ import {
 import useThemeStore from '../../store/themeStore';
 
 const StatCard = ({ title, value, subtitle, icon: Icon, color = 'blue', loading }) => {
-  const colors = {
-    blue: 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
-    green: 'bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400',
-    yellow: 'bg-yellow-50 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400',
-    orange: 'bg-orange-50 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400',
-    red: 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400',
-    purple: 'bg-purple-50 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400',
-    indigo: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400',
-    cyan: 'bg-cyan-50 text-cyan-600 dark:bg-cyan-900/30 dark:text-cyan-400',
-    emerald: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400',
+   const colors = {
+    blue: "bg-blue-500/10 text-blue-500 border border-blue-500/20",
+    emerald: "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20",
+    green: "bg-green-500/10 text-green-500 border border-green-500/20",
+    orange: "bg-orange-500/10 text-orange-500 border border-orange-500/20",
+    amber: "bg-amber-500/10 text-amber-500 border border-amber-500/20",
+    red: "bg-red-500/10 text-red-500 border border-red-500/20",
+    violet: "bg-violet-500/10 text-violet-500 border border-violet-500/20",
+    purple: "bg-purple-500/10 text-purple-500 border border-purple-500/20",
+    cyan: "bg-cyan-500/10 text-cyan-500 border border-cyan-500/20",
+    indigo: "bg-indigo-500/10 text-indigo-500 border border-indigo-500/20",
+    pink: "bg-pink-500/10 text-pink-500 border border-pink-500/20",
+    slate: "bg-slate-500/10 text-slate-400 border border-slate-500/20",
   };
 
   return (
-    <div className="glass-card-premium animate-fade-in p-5">
+    <div
+      className="
+        glass-card-premium
+        rounded-2xl
+        border
+        border-white/10
+        shadow-lg
+        hover:shadow-2xl
+        hover:-translate-y-1
+        transition-all
+        duration-300
+        p-6
+      "
+    >
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm text-gray-500 dark:text-cuzo-textMuted mb-1">{title}</p>
-          <p className={`text-2xl font-bold text-gray-900 dark:text-white ${loading ? 'opacity-40' : ''}`}>
-            {loading ? '–' : value}
+          <p className="text-sm font-medium text-gray-500 dark:text-cuzo-textMuted mb-2">
+            {title}
           </p>
-          {subtitle && <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{subtitle}</p>}
+
+          <p
+            className={`text-3xl font-bold tracking-tight text-gray-900 dark:text-white ${
+              loading ? "opacity-40 animate-pulse" : ""
+            }`}
+          >
+            {loading ? "—" : value}
+          </p>
+
+          {subtitle && (
+            <p className="mt-2 text-sm text-gray-400 dark:text-gray-500">
+              {subtitle}
+            </p>
+          )}
         </div>
-        <div className={`${colors[color]} p-2.5 rounded-xl`}>
-          <Icon className="w-5 h-5" />
+
+        <div
+          className={`
+            ${colors[color]}
+            h-14
+            w-14
+            rounded-2xl
+            flex
+            items-center
+            justify-center
+            shadow-lg
+            backdrop-blur-md
+          `}
+        >
+          <Icon className="w-7 h-7" />
         </div>
       </div>
     </div>
   );
+
 };
 
 const DeviceStatusBadge = ({ status }) => {
@@ -129,7 +171,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
         <div className="glass-card-premium animate-fade-in delay-100 p-6 relative overflow-hidden">
           {/* Subtle gradient overlay to keep it colorful but glassy */}
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-indigo-600/20 mix-blend-overlay"></div>
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 to-violet-600/20 mix-blend-overlay"></div>
           <div className="absolute top-0 right-0 p-4 opacity-10">
             <DollarSign className="w-24 h-24" />
           </div>
@@ -140,13 +182,13 @@ export default function DashboardPage() {
                 Q{revenue.today?.toFixed(2) || '0.00'}
               </p>
             </div>
-            <div className="bg-white/20 p-3 rounded-2xl backdrop-blur-sm">
-              <DollarSign className="w-8 h-8 text-white" />
+            <div className="bg-purple-400/30 p-3 rounded-2xl backdrop-blur-sm">
+              <DollarSign className="w-8 h-8 text-purple-200" />
             </div>
           </div>
         </div>
         <div className="glass-card-premium animate-fade-in delay-100 p-6 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/20 to-teal-600/20 mix-blend-overlay"></div>
+          <div className="absolute inset-0 bg-gradient-to-br from-amber-500/20 to-yellow-600/20 mix-blend-overlay"></div>
           <div className="absolute top-0 right-0 p-4 opacity-10">
             <TrendingUp className="w-24 h-24" />
           </div>
@@ -157,8 +199,8 @@ export default function DashboardPage() {
                 Q{revenue.this_month?.toFixed(2) || '0.00'}
               </p>
             </div>
-            <div className="bg-white/20 p-3 rounded-2xl backdrop-blur-sm">
-              <TrendingUp className="w-8 h-8 text-white" />
+            <div className="bg-amber-400/30 p-3 rounded-2xl backdrop-blur-sm">
+              <TrendingUp className="w-8 h-8 text-amber-200" />
             </div>
           </div>
         </div>
@@ -210,7 +252,7 @@ export default function DashboardPage() {
                 onClick={() => setChartDays(d)}
                 className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
                   chartDays === d
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-purple-600 text-white'
                     : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600'
                 }`}
               >
@@ -224,8 +266,8 @@ export default function DashboardPage() {
             <AreaChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#a855f7" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#a855f7" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#f3f4f6'} vertical={false} />
@@ -249,10 +291,10 @@ export default function DashboardPage() {
               <Area
                 type="monotone"
                 dataKey="revenue"
-                stroke="#3b82f6"
+                stroke="#a855f7"
                 strokeWidth={2}
                 fill="url(#revGrad)"
-                dot={{ r: 3, fill: '#3b82f6', strokeWidth: 0 }}
+                dot={{ r: 3, fill: '#a855f7', strokeWidth: 0 }}
                 activeDot={{ r: 5 }}
               />
             </AreaChart>

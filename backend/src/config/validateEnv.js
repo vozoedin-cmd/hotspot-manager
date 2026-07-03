@@ -6,13 +6,15 @@
 const logger = require('./logger');
 
 const REQUIRED = [
-  'DB_NAME',
-  'DB_USER',
-  'DB_PASS',
   'JWT_SECRET',
   'JWT_REFRESH_SECRET',
   'NODE_ENV',
 ];
+
+const dialect = process.env.DB_DIALECT || 'postgres';
+if (dialect === 'postgres') {
+  REQUIRED.push('DB_NAME', 'DB_USER', 'DB_PASS');
+}
 
 /** Valores que jamás deben llegar a producción */
 const INSECURE_DEFAULTS = {
